@@ -216,7 +216,7 @@ Bảng kiểm thử đầy đủ (T01–T19) xem tại [PRD](Match_and_Catch_MVP
 
 | Tên | Phụ trách |
 |---|---|
-| Văn An | Database & Migration |
+| ... | Database & Migration |
 | ... | Player & Auth Service |
 | ... | Game Engine & Scoring |
 | ... | Leaderboard & Rewards |
