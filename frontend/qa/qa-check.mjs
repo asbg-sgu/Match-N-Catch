@@ -48,8 +48,8 @@ async function waitPlayReady(timeout = 7000) {
   const t0 = Date.now();
   while (Date.now() - t0 < timeout) {
     const okp = await page.evaluate(() =>
-      S.phase === 'play' && !S.resolving && S.answers.length === 3 &&
-      document.querySelectorAll('#arena .answer').length === 3);
+      S.phase === 'play' && !S.resolving && S.answers.length === (S.round === 1 ? 4 : 3) &&
+      document.querySelectorAll('#arena .answer').length === (S.round === 1 ? 4 : 3));
     if (okp) return true;
     await page.waitForTimeout(200);
   }
@@ -73,7 +73,19 @@ for (const s of ['cover', 'howto', 'round', 'play', 'bonus', 'result']) {
 await page.goto(BASE + '?debug=play', { waitUntil: 'load' });
 await page.waitForTimeout(2600);
 let st = await state();
-ok('play: 3 đáp án bay', st.answers === 3, 'answers=' + st.answers);
+ok('play: 4 đáp án bay (vòng 1)', st.answers === 4, 'answers=' + st.answers);
+ok('pack: nạp từ js/questions.json', await page.evaluate(() => S.packSource) === 'json', 'src=' + await page.evaluate(() => S.packSource));
+ok('vòng 1: đáp án đúng là tên đầy đủ + có 2 fake', await page.evaluate(() => {
+  const q = S.questions[S.qIndex];
+  const labels = q.options.map((o) => o.label);
+  const okReal = ['Amazon Web Services', 'Google Cloud'].every((l) => labels.includes(l));
+  const okCorrect = ['Amazon Web Services', 'Google Cloud'].includes(q.options[q.correctIdx].label);
+  const fakes = labels.filter((l) => !['Amazon Web Services', 'Google Cloud'].includes(l));
+  return q.options.length === 4 && okReal && okCorrect && fakes.length === 2;
+}));
+ok('tốc độ: block ×1.0/×1.2/×1.4/×1.6', await page.evaluate(() =>
+  speedMult(1, 0) === 1 && speedMult(1, 5) === 1.2 && speedMult(2, 0) === 1.4 && speedMult(2, 5) === 1.6
+), 'm=' + await page.evaluate(() => [speedMult(1, 0), speedMult(1, 5), speedMult(2, 0), speedMult(2, 5)].join(',')));
 ok('play: dock câu hỏi hiển thị', st.dock && st.dock.visible && !st.dockHidden, 'dock=' + JSON.stringify(st.dock));
 ok('play: timer đếm', /^[1-5]$/.test(st.timer || ''), 'timer=' + st.timer);
 
@@ -118,7 +130,7 @@ ok('play: đáp án quay lại sau khi bơi qua (respawn)', respawnSeen,
 /* ---------- 5. chạm sai → −1 mạng (qua engine cho deterministic) ---------- */
 ok('chạm sai: đủ điều kiện test', await waitPlayReady(), 'playReady');
 pre = await page.evaluate(() => ({ lives: S.lives }));
-await page.evaluate(() => { const q = S.questions[S.qIndex]; resolve((q.correctIdx + 1) % 3); });
+await page.evaluate(() => { const q = S.questions[S.qIndex]; resolve((q.correctIdx + 1) % q.options.length); });
 await page.waitForTimeout(1800);
 post = await page.evaluate(() => ({ lives: S.lives, streak: S.streak }));
 ok('chạm sai → −1 mạng', post.lives === pre.lives - 1, `lives ${pre.lives}→${post.lives}`);
@@ -138,15 +150,34 @@ ok('bonus: đủ điều kiện test', await waitPlayReady(), 'playReady');
 await page.evaluate(() => resolve(S.questions[S.qIndex].correctIdx));
 await page.waitForTimeout(1500);
 st = await state();
-ok('chuỗi 5 → mở bonus', st.bonusActive && st.bopts === 4, 'bonusActive=' + st.bonusActive + ' bopts=' + st.bopts);
-const bq = await page.evaluate(() => ({ correctIdx: S.bonusQ.correctIdx, bonus: S.bonus }));
-await tapNth('#bonus-options .bopt', bq.correctIdx);
-await page.waitForTimeout(2200);
+ok('chuỗi 5 → mở bonus chọn-nhiều', st.bonusActive && st.bopts === 4, 'bonusActive=' + st.bonusActive + ' bopts=' + st.bopts);
+// tích ĐÚNG HẾT rồi chốt → +3
+const bq = await page.evaluate(() => ({ nCorrect: S.bonusQ.correctIds.length, bonus: S.bonus }));
+ok('bonus multi: có >= 2 đáp án đúng', bq.nCorrect >= 2, 'nCorrect=' + bq.nCorrect);
+await page.evaluate(() => {
+  S.bonusQ.order.forEach((o, idx) => { if (S.bonusQ.correctIds.includes(o.id)) bonusToggle(idx); });
+  bonusSubmit();
+});
+await page.waitForTimeout(2400);
 let bst = await page.evaluate(() => ({ bonus: S.bonus, bonusCount: S.bonusCount, phase: S.phase, paused: S.paused, streak: S.streak, lives: S.lives }));
-ok('bonus đúng → +3', bst.bonus === bq.bonus + 3, `bonus ${bq.bonus}→${bst.bonus}`);
+ok('bonus đúng hết → +3', bst.bonus === bq.bonus + 3, `bonus ${bq.bonus}→${bst.bonus}`);
 ok('bonus xong → resume play', bst.phase === 'play' && !bst.paused, 'phase=' + bst.phase);
 ok('bonus xong → streak về 0', bst.streak === 0);
 ok('bonus không trừ mạng', bst.lives === 3, 'lives=' + bst.lives);
+// mở bonus thứ 2, tích SAI 1 câu → +0
+await page.evaluate(() => { openBonus(); });
+await page.waitForTimeout(600);
+await page.evaluate(() => {
+  const bq2 = S.bonusQ;
+  const wrongIdx = bq2.order.findIndex((o) => !bq2.correctIds.includes(o.id));
+  bq2.order.forEach((o, idx) => { if (bq2.correctIds.includes(o.id)) bonusToggle(idx); });
+  bonusToggle(wrongIdx); // thêm 1 câu sai
+  bonusSubmit();
+});
+await page.waitForTimeout(2400);
+bst = await page.evaluate(() => ({ bonus: S.bonus, phase: S.phase }));
+ok('bonus sai 1 câu → +0', bst.bonus === 3, 'bonus=' + bst.bonus);
+ok('bonus sai → vẫn resume play', bst.phase === 'play', 'phase=' + bst.phase);
 
 /* ---------- 8. hết mạng → kết quả ---------- */
 ok('kết thúc: đủ điều kiện test', await waitPlayReady(), 'playReady');

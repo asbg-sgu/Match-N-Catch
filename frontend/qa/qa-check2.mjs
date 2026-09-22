@@ -30,17 +30,21 @@ for (;;) {
   const phase = await page.evaluate(() => S.phase);
   if (phase === 'result') break;
   if (phase === 'bonus') {
-    const c = await page.evaluate(() => S.bonusQ.correctIdx);
     bonusOpened.push(await page.evaluate(() => S.bonusQ.q.id));
-    await page.locator('#bonus-options .bopt').nth(c).dispatchEvent('pointerdown');
-    await page.waitForTimeout(1800);
+    // chọn đúng HẾT đáp án đúng rồi chốt
+    await page.evaluate(() => {
+      S.bonusQ.order.forEach((o, idx) => { if (S.bonusQ.correctIds.includes(o.id) && !S.bonusQ.selected[idx]) bonusToggle(idx); });
+      bonusSubmit();
+    });
+    await page.waitForTimeout(2300);
     continue;
   }
   if (phase === 'play') {
-    // đợi đáp án xuất hiện
+    // đợi đáp án xuất hiện (vòng 1: 4 đáp án, vòng 2: 3 đáp án)
     for (let k = 0; k < 30; k++) {
       const n = await page.evaluate(() => document.querySelectorAll('#arena .answer').length);
-      if (n === 3 && !(await page.evaluate(() => S.resolving))) break;
+      const want = await page.evaluate(() => (S.round === 1 ? 4 : 3));
+      if (n === want && !(await page.evaluate(() => S.resolving))) break;
       await page.waitForTimeout(200);
     }
     maxRound = Math.max(maxRound, await page.evaluate(() => S.round));

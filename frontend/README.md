@@ -20,11 +20,11 @@ python3 -m http.server 8642
 
 | Thành phần | Quy định |
 |---|---|
-| Vòng chơi | 2 vòng × 10 câu. Vòng 1: *nhận diện nhà cung cấp* (dễ). Vòng 2: *hiểu dịch vụ AWS* (khó hơn, bay nhanh hơn) |
-| Mỗi câu | Prompt hiện to ~0,95s → dock lên top → 3 đáp án **bơi lượn như cá** (lắc đuôi, uốn sóng, quay đầu bơi ngược, đổi làn/đổi hướng mỗi lần quay lại) theo pattern → timer **5 giây** |
+| Vòng chơi | 2 vòng × 10 câu. Vòng 1: *nhận diện nhà cung cấp* — 4 đáp án (Amazon Web Services + Google Cloud + 2 đáp án nhái sai chính tả). Vòng 2: *hiểu dịch vụ AWS* (3 đáp án, bay nhanh hơn) |
+| Mỗi câu | Prompt hiện to ~0,95s → dock lên top → đáp án **bơi lượn như cá** theo pattern → timer **5 giây**. Tốc độ bay tăng 20% mỗi block 5 câu toàn lượt (×1.0 → ×1.2 → ×1.4 → ×1.6, hiện ở badge × trên HUD) |
 | Đúng | +1 điểm chính, chuỗi +1 |
 | Sai / hết giờ | −1 mạng, chuỗi về 0 |
-| Bonus | Chuỗi **5 đúng liên tiếp** → mở 1 câu bonus scenario đứng yên, **10 giây**, đúng **+3**, sai/hết giờ +0, **không mất mạng**. Tối đa **2 bonus/lượt**, không lặp câu trong lượt |
+| Bonus | Chuỗi **5 đúng liên tiếp** → mở 1 câu bonus **chọn NHIỀU đáp án** (tích rồi chốt, 15 giây): đúng hết **+3**, sai 1 câu/hết giờ +0, **không mất mạng**. Tối đa **2 bonus/lượt**, không lặp câu trong lượt |
 | Mạng | 3 mạng dùng chung 2 vòng, không hồi. Hết mạng = kết thúc lượt ngay |
 | Điểm | Chính 0–20 + Bonus 0–6 = **tối đa 26** |
 | Quà | Điểm **chính ≥ 10** → "Đủ điều kiện nhận quà" (bonus không tính vào ngưỡng) |
@@ -38,7 +38,8 @@ Luồng: **chào → hướng dẫn → giới thiệu vòng (3-2-1) → chơi �
 ```
 index.html           khung màn hình: cover / howto / round / play / bonus / result
 css/style.css        design system "Night Signal" (squid-ink AWS + cam #FF9900)
-js/data.js           ngân hàng câu hỏi tĩnh (PRD mục 6) — sửa nội dung ở đây
+js/data.js           schema + loader bộ câu hỏi (window.__QUESTION_PACK → js/questions.json → gói cứu hộ)
+js/questions.json    NGÂN HÀNG CÂU HỎI — anh tác giả sửa file này (không cần đụng code)
 js/game.js           engine: state machine, pattern bay, timer pause/resume, bonus, leaderboard
 assets/fonts/        Be Vietnam Pro + Space Grotesk (woff2 self-host)
 assets/icons/aws/    icon dịch vụ AWS chính thức (AWS Architecture Icons, package 07/2026)

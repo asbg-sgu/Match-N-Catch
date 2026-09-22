@@ -1,84 +1,30 @@
 /* ============================================================
-   BẮT MÂY — Flying Cloud Quiz (Match & Catch MVP v0.4)
-   Ngân hàng nội dung tĩnh (PRD mục 6): chỉnh ở đây, không cần UI.
+   BẮT MÂY — Flying Cloud Quiz (Match & Catch MVP v0.5)
+   Schema + loader bộ câu hỏi. Nguồn duy nhất khi chạy thật là
+   js/questions.json (anh tác giả chỉ sửa file đó).
+   Thứ tự loader (để sau này API gắn vào không sửa code):
+     1. window.__QUESTION_PACK (API/BE inject trước game.js)
+     2. fetch('js/questions.json')
+     3. EMBEDDED_FALLBACK (gói cứu hộ khi mở file:// hoặc mất mạng)
+
+   Schema 1 câu thường:
+     { id, provider?(vòng 1: 'aws'|'gcp'), text, icon,
+       options: [{ id, label, icon? }], correctOptionId,
+       timeLimitMs? (mặc định CFG.qTime) }
+   Schema 1 câu bonus (chọn NHIỀU đáp án, khớp tuyệt đối mới điểm):
+     { id, difficulty: 'basic'|'inter', text,
+       options: [{ id, name, tag, icon }],
+       correctOptionIds: [id, ...] (>= 2 đáp án đúng),
+       timeLimitMs? (mặc định CFG.bonusTime) }
    ============================================================ */
 'use strict';
 
 const ICON = (p) => 'assets/icons/' + p;
-
-/* ---------- Dịch vụ cho Vòng 1: nhận diện nhà cung cấp ---------- */
-const SERVICES = {
-  aws: [
-    { id: 's3',         name: 'Amazon S3',      tag: 'Object Storage',    icon: ICON('aws/s3.svg') },
-    { id: 'lambda',     name: 'AWS Lambda',     tag: 'Serverless compute', icon: ICON('aws/lambda.svg') },
-    { id: 'ec2',        name: 'Amazon EC2',     tag: 'Máy chủ ảo',         icon: ICON('aws/ec2.svg') },
-    { id: 'rds',        name: 'Amazon RDS',     tag: 'Database quan hệ',   icon: ICON('aws/rds.svg') },
-    { id: 'dynamodb',   name: 'Amazon DynamoDB',tag: 'NoSQL key-value',    icon: ICON('aws/dynamodb.svg') },
-    { id: 'sqs',        name: 'Amazon SQS',     tag: 'Hàng đợi tin nhắn',  icon: ICON('aws/sqs.svg') },
-    { id: 'route53',    name: 'Amazon Route 53',tag: 'DNS',                icon: ICON('aws/route53.svg') },
-    { id: 'eks',        name: 'Amazon EKS',     tag: 'Kubernetes',         icon: ICON('aws/eks.svg') },
-    { id: 'redshift',   name: 'Amazon Redshift',tag: 'Data warehouse',     icon: ICON('aws/redshift.svg') },
-    { id: 'cloudfront', name: 'Amazon CloudFront', tag: 'CDN',             icon: ICON('aws/cloudfront.svg') },
-  ],
-  gcp: [
-    { id: 'bigquery', name: 'BigQuery',          tag: 'Data warehouse',   icon: ICON('gcp/bigquery.svg') },
-    { id: 'gcs',      name: 'Cloud Storage',     tag: 'Object storage',   icon: ICON('gcp/storage.svg') },
-    { id: 'run',      name: 'Cloud Run',         tag: 'Serverless containers', icon: ICON('gcp/run.svg') },
-    { id: 'gce',      name: 'Compute Engine',    tag: 'Máy chủ ảo',        icon: ICON('gcp/compute.svg') },
-    { id: 'sql',      name: 'Cloud SQL',         tag: 'Database quan hệ',  icon: ICON('gcp/sql.svg') },
-    { id: 'firestore',name: 'Firestore',         tag: 'NoSQL',             icon: ICON('gcp/firestore.svg') },
-    { id: 'pubsub',   name: 'Pub/Sub',           tag: 'Messaging',         icon: ICON('gcp/pubsub.svg') },
-    { id: 'dns',      name: 'Cloud DNS',         tag: 'DNS',               icon: ICON('gcp/dns.svg') },
-    { id: 'gke',      name: 'Google Kubernetes Engine', tag: 'Kubernetes', icon: ICON('gcp/gke.svg') },
-    { id: 'cdn',      name: 'Cloud CDN',         tag: 'CDN',               icon: ICON('gcp/cdn.svg') },
-  ],
-};
-
-/* ---------- Nhà cung cấp (đáp án bay của Vòng 1) ---------- */
-const PROVIDERS = [
-  { id: 'aws',    name: 'AWS',          icon: ICON('brands/aws.svg') },
-  { id: 'gcp',    name: 'Google Cloud', icon: ICON('brands/gcp.svg') },
-  { id: 'azure',  name: 'Azure',        icon: ICON('brands/azure.svg') },
-  { id: 'oracle', name: 'Oracle Cloud', icon: ICON('brands/oracle.svg') },
-];
-
-/* ---------- Vòng 2: hiểu dịch vụ AWS (mỗi lượt chọn ngẫu nhiên 10/14) ---------- */
-const ROUND2_BANK = [
-  { icon: ICON('aws/s3.svg'),         q: 'Amazon S3 chủ yếu dùng để làm gì?', o: ['Lưu trữ object (Object Storage)', 'Chạy máy ảo (VM)', 'Hàng đợi tin nhắn (Message Queue)'], c: 0 },
-  { icon: ICON('aws/lambda.svg'),     q: 'AWS Lambda dùng để làm gì?', o: ['Chạy code không cần quản lý server', 'Lưu trữ file tĩnh', 'Phân phối nội dung CDN'], c: 0 },
-  { icon: ICON('aws/ec2.svg'),        q: 'Amazon EC2 cung cấp gì?', o: ['Máy chủ ảo trên đám mây', 'Dịch vụ DNS tên miền', 'Kho dữ liệu phân tích'], c: 0 },
-  { icon: ICON('aws/rds.svg'),        q: 'Amazon RDS là dịch vụ gì?', o: ['Cơ sở dữ liệu quan hệ được quản lý', 'Serverless compute', 'Mạng phân phối nội dung'], c: 0 },
-  { icon: ICON('aws/dynamodb.svg'),   q: 'Amazon DynamoDB là loại database nào?', o: ['NoSQL key-value', 'SQL quan hệ', 'Data warehouse'], c: 0 },
-  { icon: ICON('aws/sqs.svg'),        q: 'Amazon SQS giúp giải quyết nhu cầu nào?', o: ['Tách rời dịch vụ bằng hàng đợi tin nhắn', 'Tăng tốc độ tải website', 'Quản lý tên miền'], c: 0 },
-  { icon: ICON('aws/route53.svg'),    q: 'Amazon Route 53 dùng chủ yếu cho việc gì?', o: ['DNS và định tuyến tên miền', 'Lưu trữ dữ liệu', 'Chạy code serverless'], c: 0 },
-  { icon: ICON('aws/cloudfront.svg'), q: 'Amazon CloudFront là gì?', o: ['Mạng phân phối nội dung (CDN)', 'Cơ sở dữ liệu NoSQL', 'Máy chủ ảo'], c: 0 },
-  { icon: ICON('aws/eks.svg'),        q: 'Amazon EKS giúp bạn làm gì?', o: ['Chạy Kubernetes được quản lý', 'Gửi email hàng loạt', 'Kho dữ liệu phân tích'], c: 0 },
-  { icon: ICON('aws/redshift.svg'),   q: 'Amazon Redshift dùng cho mục đích nào?', o: ['Kho dữ liệu phân tích (Data warehouse)', 'Máy chủ ảo', 'Dịch vụ DNS'], c: 0 },
-  { icon: ICON('aws/cloudwatch.svg'), q: 'Amazon CloudWatch dùng để làm gì?', o: ['Giám sát, theo dõi log và metric', 'Mạng phân phối nội dung', 'Database NoSQL'], c: 0 },
-  { icon: ICON('aws/apigateway.svg'), q: 'Amazon API Gateway dùng để làm gì?', o: ['Tạo và quản lý API', 'Lưu trữ object', 'Hàng đợi tin nhắn'], c: 0 },
-  { icon: ICON('aws/sns.svg'),        q: 'Amazon SNS dùng để làm gì?', o: ['Gửi thông báo publish/subscribe', 'Máy chủ ảo', 'Quản lý tên miền'], c: 0 },
-  { icon: ICON('aws/vpc.svg'),        q: 'Amazon VPC dùng để làm gì?', o: ['Tạo mạng riêng ảo biệt lập', 'Lưu trữ file', 'Chạy code serverless'], c: 0 },
-];
-
-/* ---------- Bonus: scenario chọn dịch vụ (3 basic + 3 intermediate, không lặp trong 1 lượt) ---------- */
-const BONUS_BANK = [
-  { id: 'b1', d: 'basic', q: 'Bạn vừa upload một tấm ảnh lên web và muốn tự động resize ảnh ngay khi ảnh tới, không muốn quản lý server. Chọn dịch vụ phù hợp nhất.',
-    o: [{ n: 'AWS Lambda', t: 'Serverless compute', i: ICON('aws/lambda.svg') }, { n: 'Amazon RDS', t: 'Database quan hệ', i: ICON('aws/rds.svg') }, { n: 'Amazon CloudFront', t: 'CDN toàn cầu', i: ICON('aws/cloudfront.svg') }, { n: 'Amazon S3', t: 'Object storage', i: ICON('aws/s3.svg') }], c: 0 },
-  { id: 'b2', d: 'basic', q: 'Web bán hàng cần lưu hàng nghìn ảnh sản phẩm và cho tải về bất cứ lúc nào với độ bền cao. Chọn dịch vụ phù hợp nhất.',
-    o: [{ n: 'Amazon S3', t: 'Object storage', i: ICON('aws/s3.svg') }, { n: 'Amazon SQS', t: 'Hàng đợi tin nhắn', i: ICON('aws/sqs.svg') }, { n: 'AWS Lambda', t: 'Serverless compute', i: ICON('aws/lambda.svg') }, { n: 'Amazon RDS', t: 'Database quan hệ', i: ICON('aws/rds.svg') }], c: 0 },
-  { id: 'b3', d: 'basic', q: 'Người dùng ở nhiều quốc gia; bạn muốn website tải nhanh ở mọi nơi. Chọn dịch vụ phù hợp nhất.',
-    o: [{ n: 'Amazon CloudFront', t: 'CDN toàn cầu', i: ICON('aws/cloudfront.svg') }, { n: 'Amazon EC2', t: 'Máy chủ ảo', i: ICON('aws/ec2.svg') }, { n: 'Amazon DynamoDB', t: 'NoSQL key-value', i: ICON('aws/dynamodb.svg') }, { n: 'Amazon Route 53', t: 'DNS', i: ICON('aws/route53.svg') }], c: 0 },
-  { id: 'b4', d: 'inter', q: 'Hệ thống nhận đơn hàng rồi chuyển cho bộ phận xử lý; nếu bộ phận xử lý đang bận, đơn hàng vẫn không bị mất. Chọn dịch vụ phù hợp nhất.',
-    o: [{ n: 'Amazon SQS', t: 'Hàng đợi tin nhắn', i: ICON('aws/sqs.svg') }, { n: 'Amazon Route 53', t: 'DNS', i: ICON('aws/route53.svg') }, { n: 'Amazon EC2', t: 'Máy chủ ảo', i: ICON('aws/ec2.svg') }, { n: 'Amazon SNS', t: 'Thông báo pub/sub', i: ICON('aws/sns.svg') }], c: 0 },
-  { id: 'b5', d: 'inter', q: 'Bạn có tên miền shopcuatoi.vn và muốn trỏ tới máy chủ, đồng thời phân tuyến giữa nhiều vùng. Chọn dịch vụ phù hợp nhất.',
-    o: [{ n: 'Amazon Route 53', t: 'DNS', i: ICON('aws/route53.svg') }, { n: 'Amazon S3', t: 'Object storage', i: ICON('aws/s3.svg') }, { n: 'AWS Lambda', t: 'Serverless compute', i: ICON('aws/lambda.svg') }, { n: 'Amazon CloudFront', t: 'CDN toàn cầu', i: ICON('aws/cloudfront.svg') }], c: 0 },
-  { id: 'b6', d: 'inter', q: 'App cần lưu dữ liệu dạng key-value với quy mô rất lớn và độ trễ thấp. Chọn dịch vụ phù hợp nhất.',
-    o: [{ n: 'Amazon DynamoDB', t: 'NoSQL key-value', i: ICON('aws/dynamodb.svg') }, { n: 'Amazon RDS', t: 'Database quan hệ', i: ICON('aws/rds.svg') }, { n: 'Amazon CloudFront', t: 'CDN toàn cầu', i: ICON('aws/cloudfront.svg') }, { n: 'Amazon EC2', t: 'Máy chủ ảo', i: ICON('aws/ec2.svg') }], c: 0 },
-];
+const PACK_URL = 'js/questions.json';
 
 /* ---------- Mô tả 2 vòng ---------- */
 const ROUNDS = [
-  { id: 1, label: 'VÒNG 1 / 2', title: 'Nhận diện nhà cung cấp', desc: 'Dịch vụ này thuộc nhà cung cấp đám mây nào? Đọc câu hỏi, bắt đúng đáp án đang bay!' },
+  { id: 1, label: 'VÒNG 1 / 2', title: 'Nhận diện nhà cung cấp', desc: 'Dịch vụ này thuộc nhà cung cấp đám mây nào? Coi chừng đáp án nhái sai chính tả!' },
   { id: 2, label: 'VÒNG 2 / 2', title: 'Hiểu dịch vụ AWS', desc: 'Dịch vụ AWS này chủ yếu dùng để làm gì? Bay nhanh hơn rồi — bình tĩnh nhé!' },
 ];
 
@@ -87,11 +33,142 @@ const CFG = {
   lives: 3,
   mainPerRound: 10,      // 2 vòng × 10 câu = tối đa 20 điểm chính
   qTime: 5000,           // 5 giây / câu chính
-  bonusTime: 10000,      // 10 giây / câu bonus
+  bonusTime: 10000,      // mặc định / câu bonus (câu bonus có timeLimitMs riêng thì dùng nó)
   streakForBonus: 5,     // chuỗi 5 đúng liên tiếp mở bonus
   maxBonus: 2,           // tối đa 2 bonus / lượt
-  bonusScore: 3,         // bonus đúng +3
+  bonusScore: 3,         // bonus đúng hết +3, sai 1 câu +0
   giftMainMin: 10,       // quà khi điểm chính >= 10
   maxPlays: 3,           // tối đa 3 lượt / MSSV
   focusMs: 950,          // câu hỏi hiện to giữa màn hình
+  speedStep: 0.2,        // mỗi block 5 câu tăng 20% tốc độ bay
 };
+
+/* ---------- Gói cứu hộ: đủ để game không sập khi thiếu JSON ---------- */
+const EMBEDDED_FALLBACK = {
+  version: 1,
+  rounds: [
+    {
+      id: 1, title: 'Nhận diện nhà cung cấp',
+      questions: [
+        {
+          id: 'fb-r1-s3', provider: 'aws',
+          text: 'Amazon S3 thuộc nhà cung cấp đám mây nào?',
+          icon: ICON('aws/s3.svg'),
+          options: [
+            { id: 'aws', label: 'Amazon Web Services', icon: ICON('brands/aws.svg') },
+            { id: 'gcp', label: 'Google Cloud', icon: ICON('brands/gcp.svg') },
+            { id: 'fb1', label: 'Amazon Web Service', icon: ICON('brands/aws.svg') },
+            { id: 'fb2', label: 'Go0gle Cloud', icon: ICON('brands/gcp.svg') },
+          ],
+          correctOptionId: 'aws',
+        },
+        {
+          id: 'fb-r1-gke', provider: 'gcp',
+          text: 'Google Kubernetes Engine thuộc nhà cung cấp đám mây nào?',
+          icon: ICON('gcp/gke.svg'),
+          options: [
+            { id: 'aws', label: 'Amazon Web Services', icon: ICON('brands/aws.svg') },
+            { id: 'gcp', label: 'Google Cloud', icon: ICON('brands/gcp.svg') },
+            { id: 'fb1', label: 'Amazone Web Services', icon: ICON('brands/aws.svg') },
+            { id: 'fb2', label: 'Google Cloude', icon: ICON('brands/gcp.svg') },
+          ],
+          correctOptionId: 'gcp',
+        },
+      ],
+    },
+    {
+      id: 2, title: 'Hiểu dịch vụ AWS',
+      questions: [
+        {
+          id: 'fb-r2-s3',
+          text: 'Amazon S3 chủ yếu dùng để làm gì?',
+          icon: ICON('aws/s3.svg'),
+          options: [
+            { id: 'a', label: 'Lưu trữ object (Object Storage)' },
+            { id: 'b', label: 'Chạy máy ảo (VM)' },
+            { id: 'c', label: 'Hàng đợi tin nhắn (Message Queue)' },
+          ],
+          correctOptionId: 'a',
+        },
+        {
+          id: 'fb-r2-lambda',
+          text: 'AWS Lambda dùng để làm gì?',
+          icon: ICON('aws/lambda.svg'),
+          options: [
+            { id: 'a', label: 'Chạy code không cần quản lý server' },
+            { id: 'b', label: 'Lưu trữ file tĩnh' },
+            { id: 'c', label: 'Phân phối nội dung CDN' }
+          ],
+          correctOptionId: 'a',
+        },
+      ],
+    },
+  ],
+  bonus: [
+    {
+      id: 'fb-mb1', difficulty: 'basic', timeLimitMs: 15000,
+      text: 'Shop online cần chỗ lưu ảnh sản phẩm VÀ tự động tạo ảnh thumbnail khi có ảnh mới. Chọn TẤT CẢ dịch vụ cần dùng.',
+      options: [
+        { id: 'o1', name: 'Amazon S3', tag: 'Object storage', icon: ICON('aws/s3.svg') },
+        { id: 'o2', name: 'AWS Lambda', tag: 'Serverless compute', icon: ICON('aws/lambda.svg') },
+        { id: 'o3', name: 'Amazon RDS', tag: 'Database quan hệ', icon: ICON('aws/rds.svg') },
+        { id: 'o4', name: 'Amazon Route 53', tag: 'DNS', icon: ICON('aws/route53.svg') },
+      ],
+      correctOptionIds: ['o1', 'o2'],
+    },
+  ],
+};
+
+/* ---------- validate + loader ---------- */
+function validatePack(p) {
+  const errs = [];
+  if (!p || typeof p !== 'object') return ['pack không phải object'];
+  if (!Array.isArray(p.rounds) || p.rounds.length < 2) errs.push('thiếu rounds[2]');
+  (p.rounds || []).forEach((r, ri) => {
+    if (!Array.isArray(r.questions) || !r.questions.length) { errs.push('round ' + ri + ' thiếu questions'); return; }
+    r.questions.forEach((q, qi) => {
+      if (!q.id || !q.text || !Array.isArray(q.options) || q.options.length < 2) errs.push('round ' + ri + ' q' + qi + ' thiếu id/text/options');
+      else if (!q.options.some((o) => o.id === q.correctOptionId)) errs.push('round ' + ri + ' q' + qi + ' correctOptionId không khớp options');
+    });
+  });
+  if (!Array.isArray(p.bonus) || !p.bonus.length) errs.push('thiếu bonus');
+  (p.bonus || []).forEach((b, bi) => {
+    if (!b.id || !b.text || !Array.isArray(b.options) || !Array.isArray(b.correctOptionIds) || b.correctOptionIds.length < 2)
+      errs.push('bonus ' + bi + ' phải có >= 2 đáp án đúng (correctOptionIds)');
+  });
+  return errs;
+}
+
+let __packCache = null;
+async function loadPack() {
+  if (__packCache) return __packCache;
+  // 1. API/BE inject
+  if (window.__QUESTION_PACK) {
+    const errs = validatePack(window.__QUESTION_PACK);
+    if (!errs.length) {
+      window.__PACK_SOURCE = 'api';
+      __packCache = window.__QUESTION_PACK;
+      console.info('[pack] dùng window.__QUESTION_PACK (API)');
+      return __packCache;
+    }
+    console.warn('[pack] __QUESTION_PACK lỗi, bỏ qua:', errs);
+  }
+  // 2. file JSON tĩnh
+  try {
+    const res = await fetch(PACK_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const j = await res.json();
+    const errs = validatePack(j);
+    if (errs.length) throw new Error('schema lỗi: ' + errs.join('; '));
+    window.__PACK_SOURCE = 'json';
+    __packCache = j;
+    console.info('[pack] đã nạp js/questions.json');
+    return __packCache;
+  } catch (e) {
+    console.warn('[pack] không nạp được JSON (' + e.message + ') → dùng gói cứu hộ');
+  }
+  // 3. cứu hộ
+  window.__PACK_SOURCE = 'fallback';
+  __packCache = EMBEDDED_FALLBACK;
+  return __packCache;
+}

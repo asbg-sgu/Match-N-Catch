@@ -76,11 +76,11 @@
             </li>
             <li class="step">
               <span class="step-num">2</span>
-              <div><b>Bắt đáp án đang bay</b><p>Chạm đúng đáp án trước khi hết 5 giây. Sai hoặc bỏ lỡ = mất 1 mạng.</p></div>
+              <div><b>Bắt đáp án đang bay</b><p>Chạm đúng đáp án trước khi hết 5 giây. Sai hoặc bỏ lỡ = mất 1 mạng. Tốc độ bay tăng 20% mỗi 5 câu — coi chừng đáp án nhái sai chính tả!</p></div>
             </li>
             <li class="step">
               <span class="step-num">3</span>
-              <div><b>Chuỗi 5 đúng = Bonus</b><p>Đúng 5 câu liên tiếp mở câu bonus +3 điểm, không mất mạng.</p></div>
+              <div><b>Chuỗi 5 đúng = Bonus</b><p>Đúng 5 câu liên tiếp mở câu bonus: tích CHỌN NHIỀU đáp án rồi chốt. Đúng hết +3 điểm, sai 1 câu +0, không mất mạng.</p></div>
             </li>
           </ol>
         </div>
@@ -106,6 +106,7 @@
         <div class="hud-item round-chip">
           <b id="hud-round">V1</b>
           <span id="hud-q">1/10</span>
+          <span id="hud-speed">×1.0</span>
         </div>
         <div class="hud-item score-chip">
           <b id="hud-score">0</b>
@@ -145,6 +146,7 @@
         <div class="bonus-ribbon">⭐ CÂU BONUS</div>
         <p class="bonus-toast">🔥 5 ĐÚNG LIÊN TIẾP — CHIẾN THUẬT!</p>
         <p class="bonus-q" id="bonus-q"></p>
+        <p class="bonus-hint">Chạm để tích CHỌN NHIỀU đáp án · đúng hết mới +điểm</p>
         <div class="bonus-timer" id="bonus-timer">
           <svg viewBox="0 0 56 56">
             <circle class="ring-bg" cx="28" cy="28" r="24"></circle>
@@ -153,7 +155,8 @@
           <span id="bonus-n">10</span>
         </div>
         <div class="bonus-options" id="bonus-options"></div>
-        <p class="bonus-note">Đúng <b>+3 điểm</b> · Sai hoặc hết giờ <b>+0</b> · Không mất mạng</p>
+        <button id="bonus-submit" type="button" class="btn-primary bonus-submit" hidden>CHỐT ĐÁP ÁN ✓</button>
+        <p class="bonus-note">Đúng hết <b>+3 điểm</b> · Sai 1 câu hoặc hết giờ <b>+0</b> · Không mất mạng</p>
       </div>
     </section>
 

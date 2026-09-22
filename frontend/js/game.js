@@ -52,6 +52,7 @@ function getLeaderboard() {
 /* ---------- state ---------- */
 const S = {
   player: null,
+  pack: null, packSource: null,
   round: 0, questions: [], qIndex: 0,
   main: 0, bonus: 0, lives: CFG.lives,
   streak: 0, bonusCount: 0, usedBonus: [],
@@ -172,15 +173,23 @@ function refreshPlayLeft() {
 }
 
 /* ---------- vòng ---------- */
+async function ensurePack() {
+  if (!S.pack) {
+    S.pack = await loadPack();
+    S.packSource = window.__PACK_SOURCE || 'unknown';
+  }
+  return S.pack;
+}
 function roundIntro(r) {
   clearTO();
   S.round = r;
-  S.phase = 'round';
-  $('#round-label').textContent = ROUNDS[r - 1].label;
-  $('#round-title').textContent = ROUNDS[r - 1].title;
-  $('#round-desc').textContent = ROUNDS[r - 1].desc;
-  showScreen('round');
-  countdown(() => startRound(r));
+  ensurePack().then(() => {
+    $('#round-label').textContent = ROUNDS[r - 1].label;
+    $('#round-title').textContent = ROUNDS[r - 1].title;
+    $('#round-desc').textContent = ROUNDS[r - 1].desc;
+    showScreen('round');
+    countdown(() => startRound(r));
+  });
 }
 function roundTransition(r) {
   clearTO();
@@ -205,36 +214,39 @@ function countdown(go) {
   }, 760);
   TO.push(iv);
 }
-function buildRoundQuestions(r) {
-  if (r === 1) {
-    const aws = shuffle(SERVICES.aws).slice(0, 5).map((s) => ({ s, prov: 'aws' }));
-    const gcp = shuffle(SERVICES.gcp).slice(0, 5).map((s) => ({ s, prov: 'gcp' }));
-    return shuffle([...aws, ...gcp]).map(({ s, prov }) => {
-      const opts = buildProviderOptions(prov);
-      return {
-        round: 1,
-        icon: s.icon,
-        text: s.name + ' thuộc nhà cung cấp đám mây nào?',
-        options: opts,
-        correctIdx: opts.findIndex((o) => o.id === prov),
-      };
-    });
-  }
-  return shuffle(ROUND2_BANK).slice(0, 10).map((q) => {
-    const opts = shuffle(q.o.map((label, i) => ({ label, orig: i })));
-    return {
-      round: 2,
-      icon: q.icon,
-      text: q.q,
-      options: opts,
-      correctIdx: opts.findIndex((o) => o.orig === q.c),
-    };
-  });
+/* Tốc độ bay tăng CFG.speedStep (20%) mỗi block 5 câu toàn lượt 1–20:
+   câu 1–5 ×1.0 · 6–10 ×1.2 · 11–15 ×1.4 · 16–20 ×1.6 */
+function speedMult(round, qIndex) {
+  const g = (round - 1) * CFG.mainPerRound + qIndex; // 0–19
+  return 1 + CFG.speedStep * Math.floor(g / 5);
 }
-function buildProviderOptions(provId) {
-  const right = PROVIDERS.find((p) => p.id === provId);
-  const others = shuffle(PROVIDERS.filter((p) => p.id !== provId)).slice(0, 2);
-  return shuffle([right, ...others]);
+function toPlayable(q, round) {
+  const opts = shuffle(q.options.map((o) => ({ ...o })));
+  return {
+    round,
+    id: q.id,
+    icon: q.icon,
+    text: q.text,
+    timeMs: q.timeLimitMs || CFG.qTime,
+    options: opts,
+    correctIdx: opts.findIndex((o) => o.id === q.correctOptionId),
+  };
+}
+function buildRoundQuestions(r) {
+  const R = S.pack.rounds[r - 1];
+  if (r === 1) {
+    // cân 5 AWS + 5 GCP (theo field provider) để đáp án đúng không lệch hẳn 1 bên
+    const aws = shuffle(R.questions.filter((q) => q.provider === 'aws'));
+    const gcp = shuffle(R.questions.filter((q) => q.provider !== 'aws'));
+    const take = [
+      ...aws.slice(0, Math.ceil(CFG.mainPerRound / 2)),
+      ...gcp.slice(0, Math.floor(CFG.mainPerRound / 2)),
+    ];
+    const rest = shuffle(R.questions.filter((q) => !take.includes(q)));
+    while (take.length < Math.min(CFG.mainPerRound, R.questions.length)) take.push(rest.pop());
+    return shuffle(take).map((q) => toPlayable(q, 1));
+  }
+  return shuffle(R.questions).slice(0, Math.min(CFG.mainPerRound, R.questions.length)).map((q) => toPlayable(q, 2));
 }
 
 function startRound(r) {
@@ -256,6 +268,8 @@ function startQuestion() {
 
   $('#hud-round').textContent = 'V' + S.round;
   $('#hud-q').textContent = (S.qIndex + 1) + '/' + S.questions.length;
+  const mult = speedMult(S.round, S.qIndex);
+  $('#hud-speed').textContent = '×' + mult.toFixed(1);
   setProgress();
 
   const dock = $('#qdock');
@@ -279,7 +293,7 @@ function startQuestion() {
       if (S.phase !== 'play') return;
       focus.style.display = 'none';
       spawnAnswers(q);
-      S.qRemain = CFG.qTime;
+      S.qRemain = q.timeMs;
     });
   }, CFG.focusMs);
 }
@@ -315,15 +329,16 @@ function pickPattern() {
   return p[S.qIndex % p.length];
 }
 function entryState(pattern, i, W, H, w, h, lane, rev = false) {
-  const T = S.round === 1 ? 4500 : 5600;
+  const T = (S.round === 1 ? 3000 : 2500) / speedMult(S.round, S.qIndex);
   const spd = () => T * rand(0.88, 1.14) / 1000; // giây → vx/vy ra px/giây, khớp với x += vx*dt/1000
   const lanesY = [0.18, 0.5, 0.82].map((f) => f * H);
+  const lanesY4 = [0.14, 0.38, 0.62, 0.86].map((f) => f * H); // vòng 1 giờ 4 đáp án
   const lanesX = [0.24, 0.5, 0.76].map((f) => f * W);
   const m = 30;
   switch (pattern) {
     case 'horizontal': {
       const flip = Math.random() < 0.5 ? 1 : -1;
-      return { x0: flip > 0 ? -w - m : W + m, y0: lanesY[lane % 3] - h / 2, vx: flip * (W + w + 2 * m) / spd(), vy: 0, kind: 'h' };
+      return { x0: flip > 0 ? -w - m : W + m, y0: lanesY4[lane % 4] - h / 2, vx: flip * (W + w + 2 * m) / spd(), vy: 0, kind: 'h' };
     }
     case 'vertical': {
       const flip = Math.random() < 0.5 ? 1 : -1;
@@ -347,7 +362,7 @@ function entryState(pattern, i, W, H, w, h, lane, rev = false) {
     }
     case 'opposite': {
       const side = i < 2 ? -1 : 1;
-      return { x0: side < 0 ? -w - m : W + m, y0: lanesY[lane % 3] - h / 2, vx: -side * (W + w + 2 * m) / spd(), vy: 0, kind: 'h' };
+      return { x0: side < 0 ? -w - m : W + m, y0: lanesY4[lane % 4] - h / 2, vx: -side * (W + w + 2 * m) / spd(), vy: 0, kind: 'h' };
     }
     case 'cross': {
       if (i === 0) return rev
@@ -367,14 +382,14 @@ function spawnAnswers(q) {
   const rect = arena.getBoundingClientRect();
   S.arenaRect = { W: rect.width, H: rect.height };
   const pattern = pickPattern();
-  const letters = ['A', 'B', 'C'];
+  const letters = ['A', 'B', 'C', 'D'];
 
   S.answers = q.options.map((opt, i) => {
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'answer';
     if (q.round === 1) {
-      el.innerHTML = '<img class="ans-icon" src="' + opt.icon + '" alt=""><span class="ans-text">' + opt.name + '</span>';
+      el.innerHTML = '<img class="ans-icon" src="' + opt.icon + '" alt=""><span class="ans-text">' + opt.label + '</span>';
     } else {
       el.innerHTML = '<span class="ans-letter">' + letters[i] + '</span><span class="ans-text">' + opt.label + '</span>';
     }
@@ -434,7 +449,8 @@ function ensureLoop() {
     if (S.phase === 'play') {
       if (!S.paused && !S.resolving && S.qRemain > 0) {
         S.qRemain -= dt;
-        renderTimer('timer', 'timer-n', 'ring', S.qRemain, CFG.qTime);
+        const tMs = (S.questions[S.qIndex] && S.questions[S.qIndex].timeMs) || CFG.qTime;
+        renderTimer('timer', 'timer-n', 'ring', S.qRemain, tMs);
         if (S.qRemain <= 0) { S.qRemain = 0; resolve(null); }
       }
       if (!S.paused && !S.resolving) {
@@ -469,9 +485,9 @@ function ensureLoop() {
         }
       }
     } else if (S.phase === 'bonus' && S.bonusQ) {
-      if (S.bonusQ.chosen === null) {
+      if (!S.bonusQ.graded) {
         S.bonusQ.remain -= dt;
-        renderTimer('bonus-timer', 'bonus-n', 'bonus-ring', S.bonusQ.remain, CFG.bonusTime);
+        renderTimer('bonus-timer', 'bonus-n', 'bonus-ring', S.bonusQ.remain, S.bonusQ.timeMs);
         if (S.bonusQ.remain <= 0) { S.bonusQ.remain = 0; bonusTimeout(); }
       }
     }
@@ -588,11 +604,11 @@ function showBanner(text, cls) {
   st(() => b.classList.remove('show'), 1300);
 }
 
-/* ---------- bonus ---------- */
+/* ---------- bonus: chọn NHIỀU đáp án, khớp tuyệt đối mới +điểm ---------- */
 function openBonus() {
-  const pool = BONUS_BANK.filter((b) => !S.usedBonus.includes(b.id));
-  const basic = pool.filter((b) => b.d === 'basic');
-  const inter = pool.filter((b) => b.d === 'inter');
+  const pool = S.pack.bonus.filter((b) => !S.usedBonus.includes(b.id));
+  const basic = pool.filter((b) => b.difficulty === 'basic');
+  const inter = pool.filter((b) => b.difficulty !== 'basic');
   const group = S.bonusCount === 0 ? (basic.length ? basic : inter) : (inter.length ? inter : basic);
   const b = pick(group.length ? group : pool);
   S.usedBonus.push(b.id);
@@ -603,44 +619,68 @@ function openBonus() {
   S.paused = true;
   S.phase = 'bonus';
 
-  $('#bonus-q').textContent = b.q;
+  const timeMs = b.timeLimitMs || CFG.bonusTime;
+  $('#bonus-q').textContent = b.text;
   const box = $('#bonus-options');
   box.innerHTML = '';
-  const order = shuffle(b.o.map((o, i) => ({ ...o, orig: i })));
-  S.bonusQ = { q: b, order, correctIdx: order.findIndex((o) => o.orig === b.c), chosen: null, remain: CFG.bonusTime };
+  const order = shuffle(b.options.map((o, i) => ({ ...o, orig: i })));
+  S.bonusQ = {
+    q: b, order,
+    correctIds: [...b.correctOptionIds],
+    selected: new Array(order.length).fill(false),
+    remain: timeMs, timeMs, graded: false,
+  };
 
   order.forEach((o, i) => {
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'bopt';
-    el.innerHTML = '<img src="' + o.i + '" alt=""><span class="bopt-name">' + o.n + '</span>';
-    el.addEventListener('pointerdown', (ev) => { ev.preventDefault(); bonusTap(i); });
+    el.innerHTML = '<span class="tick" aria-hidden="true"></span><img src="' + o.icon + '" alt=""><span><span class="bopt-name">' + o.name + '</span><span class="bopt-tag">' + o.tag + '</span></span>';
+    el.addEventListener('pointerdown', (ev) => { ev.preventDefault(); bonusToggle(i); });
     box.appendChild(el);
   });
-  renderTimer('bonus-timer', 'bonus-n', 'bonus-ring', CFG.bonusTime, CFG.bonusTime);
+  $('#bonus-submit').hidden = false;
+  renderTimer('bonus-timer', 'bonus-n', 'bonus-ring', timeMs, timeMs);
   showScreen('bonus');
   ensureLoop();
 }
-function bonusTap(i) {
-  if (!S.bonusQ || S.bonusQ.chosen !== null) return;
-  S.bonusQ.chosen = i;
+function bonusToggle(i) {
   const bq = S.bonusQ;
+  if (!bq || bq.graded) return;
+  bq.selected[i] = !bq.selected[i];
+  $$('#bonus-options .bopt')[i].classList.toggle('selected', bq.selected[i]);
+}
+function bonusSubmit() {
+  if (!S.bonusQ || S.bonusQ.graded) return;
+  gradeBonus(false);
+}
+function gradeBonus(timeout) {
+  const bq = S.bonusQ;
+  if (!bq || bq.graded) return;
+  bq.graded = true;
+  $('#bonus-submit').hidden = true;
   const opts = $$('#bonus-options .bopt');
+  const picked = bq.order.filter((o, idx) => bq.selected[idx]).map((o) => o.id).sort();
+  const want = [...bq.correctIds].sort();
+  const exact = picked.length === want.length && picked.every((id, k) => id === want[k]);
   const card = $('#screen-bonus');
   const r = $('#screen-bonus .bonus-card').getBoundingClientRect();
   const cx = r.left + r.width / 2, cy = r.top + r.height * 0.34;
-  if (i === bq.correctIdx) {
+  if (exact) {
     S.bonus += CFG.bonusScore;
-    opts[i].classList.add('is-correct');
+    opts.forEach((el, idx) => { el.classList.toggle('is-correct', bq.selected[idx]); el.classList.toggle('is-dim', !bq.selected[idx]); });
     burstAtGold(card);
-    fxAt(cx - 40, cy, '+3 ⭐', 'gold', card);
+    fxAt(cx - 40, cy, '+' + CFG.bonusScore + ' ⭐', 'gold', card);
   } else {
-    opts[i].classList.add('is-wrong');
-    opts[bq.correctIdx].classList.add('reveal-correct');
-    fxAt(cx - 20, cy, '+0', 'bad', card);
+    opts.forEach((el, idx) => {
+      const isRight = bq.correctIds.includes(bq.order[idx].id);
+      if (bq.selected[idx] && !isRight) el.classList.add('is-wrong');
+      else if (isRight) el.classList.add('reveal-correct');
+      else el.classList.add('is-dim');
+    });
+    fxAt(cx - 20, cy, timeout ? '⏰ HẾT GIỜ — +0' : '+0', 'bad', card);
   }
-  opts.forEach((o, idx) => { if (idx !== i && idx !== bq.correctIdx) o.classList.add('is-dim'); });
-  st(closeBonus, 1500);
+  st(closeBonus, 1800);
 }
 function burstAtGold(parent) {
   const rect = $('#screen-bonus .bonus-card').getBoundingClientRect();
@@ -658,15 +698,8 @@ function burstAtGold(parent) {
   st(() => layer.remove(), 850);
 }
 function bonusTimeout() {
-  if (!S.bonusQ || S.bonusQ.chosen !== null) return;
-  S.bonusQ.chosen = -1;
-  const bq = S.bonusQ;
-  const opts = $$('#bonus-options .bopt');
-  opts[bq.correctIdx].classList.add('reveal-correct');
-  opts.forEach((o, idx) => { if (idx !== bq.correctIdx) o.classList.add('is-dim'); });
-  const r = $('#screen-bonus .bonus-card').getBoundingClientRect();
-  fxAt(r.left + r.width / 2 - 80, r.top + r.height * 0.3, '⏰ HẾT GIỜ — +0', 'bad', $('#screen-bonus'));
-  st(closeBonus, 1500);
+  if (!S.bonusQ || S.bonusQ.graded) return;
+  gradeBonus(true);
 }
 function closeBonus() {
   if (S.phase !== 'bonus') return;
@@ -834,7 +867,9 @@ function init() {
   initAmbient();
   renderHearts();
   initCover();
+  ensurePack().then(() => applyDebug());
   $('#btn-howto-ok').addEventListener('click', () => roundIntro(1));
+  $('#bonus-submit').addEventListener('click', (ev) => { ev.preventDefault(); bonusSubmit(); });
   $('#btn-replay').addEventListener('click', () => {
     $('#inp-name').value = S.player ? S.player.name : '';
     $('#inp-mssv').value = S.player ? S.player.mssv : '';
@@ -851,6 +886,5 @@ function init() {
       S.arenaRect = { W: r.width, H: r.height };
     }
   });
-  applyDebug();
 }
 document.addEventListener('DOMContentLoaded', init);
