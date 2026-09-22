@@ -1,13 +1,190 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>my-react-app</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0b1426">
+  <title>BẮT MÂY · Flying Cloud Quiz — AWS</title>
+  <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
+  <link rel="stylesheet" href="assets/fonts/fonts.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- ===== Nền không khí (ambient) ===== -->
+  <div class="bg" id="bg" aria-hidden="true">
+    <div class="bg-aurora a1"></div>
+    <div class="bg-aurora a2"></div>
+    <div class="bg-aurora a3"></div>
+    <div class="bg-grid"></div>
+    <div class="bg-icons">
+      <img src="assets/icons/aws/s3.svg" alt="" style="--dx:12%;--dy:8%;--s:46px;--d:36s;--dl:-4s">
+      <img src="assets/icons/aws/lambda.svg" alt="" style="--dx:-8%;--dy:22%;--s:34px;--d:44s;--dl:-20s">
+      <img src="assets/icons/aws/ec2.svg" alt="" style="--dx:6%;--dy:34%;--s:28px;--d:52s;--dl:-30s">
+      <img src="assets/icons/gcp/bigquery.svg" alt="" style="--dx:-14%;--dy:44%;--s:40px;--d:40s;--dl:-12s">
+      <img src="assets/icons/aws/rds.svg" alt="" style="--dx:16%;--dy:58%;--s:30px;--d:48s;--dl:-24s">
+      <img src="assets/icons/gcp/gke.svg" alt="" style="--dx:-6%;--dy:68%;--s:36px;--d:38s;--dl:-8s">
+      <img src="assets/icons/aws/cloudfront.svg" alt="" style="--dx:10%;--dy:78%;--s:26px;--d:46s;--dl:-16s">
+    </div>
+    <div class="bg-particles" id="bg-particles"></div>
+    <div class="bg-grain"></div>
+  </div>
+
+  <main id="app">
+    <!-- ===== MÀN CHÀO ===== -->
+    <section id="screen-cover" class="screen active">
+      <div class="cover-inner">
+        <div class="brand">
+          <div class="brand-badge">
+            <img src="assets/icons/brands/aws.svg" alt="AWS">
+          </div>
+          <p class="brand-kicker">FLYING CLOUD QUIZ</p>
+          <h1 class="brand-title">BẮT MÂY</h1>
+          <p class="brand-sub">Match &amp; Catch · AWS × Google Cloud</p>
+        </div>
+        <div class="chips">
+          <span class="chip">⚡ 2 vòng × 10 câu</span>
+          <span class="chip">❤️ 3 mạng</span>
+          <span class="chip">⭐ 2 câu bonus</span>
+          <span class="chip">⏱ 5 giây / câu</span>
+        </div>
+        <form id="start-form" class="card" autocomplete="off">
+          <label class="field">
+            <span class="field-label">Tên hiển thị</span>
+            <input id="inp-name" type="text" maxlength="24" placeholder="VD: Minh Anh" required>
+          </label>
+          <label class="field">
+            <span class="field-label">Mã sinh viên</span>
+            <input id="inp-mssv" type="text" inputmode="numeric" maxlength="10" placeholder="VD: 2212345" required>
+          </label>
+          <p class="play-left" id="play-left" hidden></p>
+          <button id="btn-start" type="submit" class="btn-primary">BẮT ĐẦU CHƠI</button>
+          <p class="cover-note">Quét QR rồi chơi ngay trên điện thoại · không cần đăng ký tài khoản</p>
+        </form>
+        <p class="cover-foot">Match &amp; Catch MVP · Sự kiện CLB Cloud</p>
+      </div>
+    </section>
+
+    <!-- ===== HƯỚNG DẪN ===== -->
+    <section id="screen-howto" class="screen">
+      <div class="howto-inner">
+        <h2 class="howto-title">Cách chơi</h2>
+        <div class="card">
+          <ol class="steps">
+            <li class="step">
+              <span class="step-num">1</span>
+              <div><b>Đọc câu hỏi</b><p>Câu hỏi hiện to giữa màn hình rồi ghim lên trên.</p></div>
+            </li>
+            <li class="step">
+              <span class="step-num">2</span>
+              <div><b>Bắt đáp án đang bay</b><p>Chạm đúng đáp án trước khi hết 5 giây. Sai hoặc bỏ lỡ = mất 1 mạng.</p></div>
+            </li>
+            <li class="step">
+              <span class="step-num">3</span>
+              <div><b>Chuỗi 5 đúng = Bonus</b><p>Đúng 5 câu liên tiếp mở câu bonus +3 điểm, không mất mạng.</p></div>
+            </li>
+          </ol>
+        </div>
+        <p class="howto-tip">Có 3 mạng cho cả 2 vòng · hết mạng là dừng lượt ngay.</p>
+        <button id="btn-howto-ok" class="btn-primary">ĐÃ HIỂU — CHIẾN THÔI!</button>
+      </div>
+    </section>
+
+    <!-- ===== GIỚI THIỆU VÒNG ===== -->
+    <section id="screen-round" class="screen">
+      <div class="round-inner">
+        <p class="round-label" id="round-label">VÒNG 1 / 2</p>
+        <h2 class="round-title" id="round-title">Nhận diện nhà cung cấp</h2>
+        <p class="round-desc" id="round-desc"></p>
+        <div class="countdown" id="countdown">3</div>
+        <p class="round-tip">Đọc kỹ câu hỏi — đáp án đúng chỉ có MỘT!</p>
+      </div>
+    </section>
+
+    <!-- ===== MÀN CHƠI CHÍNH ===== -->
+    <section id="screen-play" class="screen">
+      <header class="hud">
+        <div class="hud-item round-chip">
+          <b id="hud-round">V1</b>
+          <span id="hud-q">1/10</span>
+        </div>
+        <div class="hud-item score-chip">
+          <b id="hud-score">0</b>
+          <span>ĐIỂM</span>
+        </div>
+        <div class="hud-item lives" id="hud-lives"></div>
+        <div class="hud-item streak" id="hud-streak" hidden>
+          <svg viewBox="0 0 24 24" class="flame"><path d="M12 2c1.8 3.6 5.2 5.4 5.2 10a5.2 5.2 0 1 1-10.4 0c0-2 1-3.8 2.2-5.2.5 1.7 1.4 2.9 2.5 3.6-.4-2.6-.1-5.4.5-8.4z" fill="currentColor"/></svg>
+          <b id="hud-streak-n">1</b>
+        </div>
+      </header>
+      <div class="progress"><i id="progress"></i></div>
+      <div class="qdock" id="qdock" hidden>
+        <img id="q-icon" alt="">
+        <p class="qdock-text" id="q-text"></p>
+        <div class="timer" id="timer">
+          <svg viewBox="0 0 40 40">
+            <circle class="ring-bg" cx="20" cy="20" r="16"></circle>
+            <circle class="ring" id="ring" cx="20" cy="20" r="16"></circle>
+          </svg>
+          <span id="timer-n">5</span>
+        </div>
+      </div>
+      <div class="focus" id="focus">
+        <img id="focus-icon" alt="">
+        <p id="focus-text"></p>
+      </div>
+      <div class="arena" id="arena"></div>
+      <div class="fx-layer" id="fx"></div>
+      <div class="banner" id="banner"></div>
+    </section>
+
+    <!-- ===== CÂU BONUS ===== -->
+    <section id="screen-bonus" class="screen overlay">
+      <div class="bonus-backdrop"></div>
+      <div class="bonus-card card">
+        <div class="bonus-ribbon">⭐ CÂU BONUS</div>
+        <p class="bonus-toast">🔥 5 ĐÚNG LIÊN TIẾP — CHIẾN THUẬT!</p>
+        <p class="bonus-q" id="bonus-q"></p>
+        <div class="bonus-timer" id="bonus-timer">
+          <svg viewBox="0 0 56 56">
+            <circle class="ring-bg" cx="28" cy="28" r="24"></circle>
+            <circle class="ring" id="bonus-ring" cx="28" cy="28" r="24"></circle>
+          </svg>
+          <span id="bonus-n">10</span>
+        </div>
+        <div class="bonus-options" id="bonus-options"></div>
+        <p class="bonus-note">Đúng <b>+3 điểm</b> · Sai hoặc hết giờ <b>+0</b> · Không mất mạng</p>
+      </div>
+    </section>
+
+    <!-- ===== KẾT QUẢ ===== -->
+    <section id="screen-result" class="screen">
+      <div class="result-inner">
+        <div class="result-badge" id="result-badge">🏆</div>
+        <p class="result-label">TỔNG ĐIỂM</p>
+        <p class="result-total"><span id="result-total">0</span><em id="result-max">/ 26</em></p>
+        <p class="result-hello" id="result-hello"></p>
+        <div class="result-break">
+          <span class="break-chip">Câu chính <b id="res-main">0</b>/20</span>
+          <span class="break-chip">Bonus <b id="res-bonus">0</b>/6</span>
+        </div>
+        <div class="gift-card" id="gift-card"></div>
+        <h3 class="leader-title">BẢNG XẾP HẠNG</h3>
+        <div class="podium" id="podium"></div>
+        <ol class="leader" id="leader"></ol>
+        <p class="leader-note">Mỗi MSSV chỉ hiển thị lượt tốt nhất · mã sinh viên không công khai</p>
+        <div class="result-actions">
+          <button id="btn-replay" class="btn-primary">CHƠI LẠI</button>
+          <button id="btn-home" class="btn-ghost">Về trang đầu</button>
+        </div>
+        <p class="result-note" id="result-note"></p>
+      </div>
+    </section>
+  </main>
+
+  <canvas id="confetti"></canvas>
+
+  <script src="js/data.js"></script>
+  <script src="js/game.js"></script>
+</body>
 </html>
