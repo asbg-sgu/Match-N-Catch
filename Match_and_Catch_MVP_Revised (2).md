@@ -135,32 +135,7 @@ Thông tin trên điện thoại người chơi không thay thế việc BTC ki�
 | 7 | Thu thập Metric / Log từ ECS → CloudWatch |
 | 8 | Thiết lập & Phân quyền qua Secrets Manager → RDS |
 
-### 5.2. Mô tả tổng quan
-
-```text
-User (devices)
-  │
-  ├─[1] DNS Query
-  ├─[2]──► Amazon S3 (StaticWeb) ─── HTML/JS/CSS (Frontend React)
-  │
-  └─[3]──► Application Load Balancer (trong VPC)
-                │
-                └──► Amazon ECS (Backend Python API)
-                          │
-                          ├─[4]──► Amazon RDS (MySQL) ◄──[8] Secrets Manager
-                          ├─[7]──► Amazon CloudWatch
-                          └── AWS IAM (phân quyền service)
-
-CI/CD Pipeline:
-  GitHub Actions ─[5]─► Amazon ECR ─[6]─► Amazon ECS
-
-Security & Governance (trong dashed box):
-  - AWS Secrets Manager  (DB password, admin password, secret key)
-  - AWS IAM              (role & policy cho ECS, ECR, RDS, Secrets Manager)
-  - Amazon CloudWatch    (log, metric, alert)
-```
-
-### 5.3. Phân công thành phần
+### 5.2. Phân công thành phần
 
 | Thành phần | Công nghệ | Vai trò |
 | --- | --- | --- |
@@ -175,7 +150,7 @@ Security & Governance (trong dashed box):
 | Phân quyền | AWS IAM | Role & policy cho ECS task, ECR pull, RDS access |
 | Giám sát | Amazon CloudWatch | Log, metric, alert từ ECS |
 
-### 5.4. Trạng thái hệ thống
+### 5.3. Trạng thái hệ thống
 
 ```text
 Attempt: created → in_progress → submitted | abandoned
@@ -184,7 +159,7 @@ Bonus:   locked → available → answered
 Reward:  eligible → claimed
 ```
 
-### 5.5. Quy tắc tính điểm (backend kiểm tra)
+### 5.4. Quy tắc tính điểm (backend kiểm tra)
 
 ```
 main_score    = số thẻ mục tiêu chọn đúng
