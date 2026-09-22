@@ -12,7 +12,7 @@
 | Frontend | React + TypeScript + Vite — tối ưu cho mobile web |
 | Backend | Python (FastAPI hoặc Flask) |
 | Database | MySQL (Amazon RDS) |
-| Deploy | AWS: CloudFront + S3 (FE), EC2 (BE), RDS (DB), ECR + GitHub Actions (CI/CD) |
+| Deploy | AWS: S3 StaticWeb (FE), ECS + ALB trong VPC (BE), RDS (DB), ECR + GitHub Actions (CI/CD) |
 | Auth người chơi | Backend trả `session_token` sau `/game/start`; FE lưu localStorage, gửi kèm mọi request. Nếu người chơi thoát giữa chừng, lượt cũ tự động `abandoned`; quét QR lại sẽ tạo lượt mới hoàn toàn. |
 | Auth BTC | Một tài khoản admin duy nhất, mật khẩu cố định trong `.env` |
 | REWARD_THRESHOLD | **12 điểm** (cố định trong `.env`, không cần UI chỉnh) |
@@ -118,33 +118,64 @@ Thông tin trên điện thoại người chơi không thay thế việc BTC ki�
 
 ## 5. Kiến trúc hệ thống
 
-### 5.1. Sơ đồ tổng quan
+### 5.1. Sơ đồ kiến trúc AWS
+
+![Kiến trúc hệ thống Match & Catch trên AWS](images_document/image.png)
+
+**Bảng chú thích luồng:**
+
+| # | Luồng |
+| --- | --- |
+| 1 | Phân giải tên miền (DNS Query) |
+| 2 | Lấy giao diện (HTML/JS/CSS) từ S3 StaticWeb |
+| 3 | Gọi API / Xử lý logic qua Application Load Balancer → ECS |
+| 4 | Cập nhật dữ liệu giữa ECS ↔ RDS |
+| 5 | Build Image & Push từ GitHub Actions → ECR |
+| 6 | Deploy / Pull Image từ ECR → ECS |
+| 7 | Thu thập Metric / Log từ ECS → CloudWatch |
+| 8 | Thiết lập & Phân quyền qua Secrets Manager → RDS |
+
+### 5.2. Mô tả tổng quan
 
 ```text
-Điện thoại người chơi ── HTTPS ──┐
-                                 ├── EC2 (Backend Python API) ── RDS (MySQL)
-Trang BTC (máy tính) ── HTTPS ───┘
+User (devices)
+  │
+  ├─[1] DNS Query
+  ├─[2]──► Amazon S3 (StaticWeb) ─── HTML/JS/CSS (Frontend React)
+  │
+  └─[3]──► Application Load Balancer (trong VPC)
+                │
+                └──► Amazon ECS (Backend Python API)
+                          │
+                          ├─[4]──► Amazon RDS (MySQL) ◄──[8] Secrets Manager
+                          ├─[7]──► Amazon CloudWatch
+                          └── AWS IAM (phân quyền service)
 
-CloudFront → S3 (Static Frontend)
-GitHub Actions → ECR → EC2 (CI/CD)
-AWS Secrets Manager (biến nhạy cảm)
-Amazon CloudWatch (log, alert)
+CI/CD Pipeline:
+  GitHub Actions ─[5]─► Amazon ECR ─[6]─► Amazon ECS
+
+Security & Governance (trong dashed box):
+  - AWS Secrets Manager  (DB password, admin password, secret key)
+  - AWS IAM              (role & policy cho ECS, ECR, RDS, Secrets Manager)
+  - Amazon CloudWatch    (log, metric, alert)
 ```
 
-### 5.2. Phân công thành phần
+### 5.3. Phân công thành phần
 
 | Thành phần | Công nghệ | Vai trò |
 | --- | --- | --- |
 | Frontend | React + TypeScript + Vite | Game UI, hoạt ảnh thẻ, màn bonus, kết quả, trang BTC |
-| Backend | Python (FastAPI/Flask) trên EC2 | Logic game, tính điểm, bảng xếp hạng, xác nhận quà |
+| Static Hosting | Amazon S3 (StaticWeb) | Phục vụ file frontend tĩnh (HTML/JS/CSS) |
+| Load Balancer | Application Load Balancer (ALB) | Điều hướng traffic HTTPS vào ECS, nằm trong VPC |
+| Backend | Python (FastAPI/Flask) trên Amazon ECS | Logic game, tính điểm, bảng xếp hạng, xác nhận quà |
 | Database | MySQL trên Amazon RDS | Lưu sinh viên, lượt chơi, sự kiện, trạng thái quà |
-| Static Hosting | S3 + CloudFront | Phục vụ file frontend |
-| Container | Docker + Amazon ECR | Đóng gói và deploy backend |
-| CI/CD | GitHub Actions | Build image, push ECR, deploy EC2 |
+| Container Registry | Amazon ECR | Lưu trữ Docker image của backend |
+| CI/CD | GitHub Actions | Build image → push ECR → deploy lên ECS |
 | Bí mật | AWS Secrets Manager | DB password, admin password, secret key |
-| Giám sát | Amazon CloudWatch | Log, metric, alert |
+| Phân quyền | AWS IAM | Role & policy cho ECS task, ECR pull, RDS access |
+| Giám sát | Amazon CloudWatch | Log, metric, alert từ ECS |
 
-### 5.3. Trạng thái hệ thống
+### 5.4. Trạng thái hệ thống
 
 ```text
 Attempt: created → in_progress → submitted | abandoned
@@ -153,7 +184,7 @@ Bonus:   locked → available → answered
 Reward:  eligible → claimed
 ```
 
-### 5.4. Quy tắc tính điểm (backend kiểm tra)
+### 5.5. Quy tắc tính điểm (backend kiểm tra)
 
 ```
 main_score    = số thẻ mục tiêu chọn đúng
@@ -300,9 +331,9 @@ match-and-catch/
 │   │   ├── cards.json          # danh sách thẻ AWS + Google Cloud
 │   │   └── bonus_questions.json # ngân hàng 6–10 câu bonus
 │   ├── .env.example
-│   ├── Dockerfile
+│   ├── Dockerfile              # build image → push ECR → deploy ECS
 │   └── requirements.txt
-├── .github/workflows/          # CI/CD GitHub Actions
+├── .github/workflows/          # CI/CD: build → ECR → ECS deploy
 └── README.md
 ```
 
@@ -342,7 +373,7 @@ match-and-catch/
 | **22/09 – Sáng** | Chốt danh sách thẻ (`cards.json`) và câu bonus (`bonus_questions.json`); tạo project, kết nối RDS, migration DB; hoàn thành `/api/players` và `/api/game/start` (trả `session_token` + bộ thẻ). |
 | **22/09 – Chiều/tối** | Xây game frontend: thẻ bay 2 chiều (~3s), xử lý chạm, điểm/mạng/chuỗi, màn bonus; kiểm thử T01–T04 trên trình duyệt. |
 | **23/09 – Sáng** | Hoàn thành `/api/game/submit` (idempotent, kiểm tra nhật ký); tích hợp Top 10, màn kết quả, Reward Info; đăng nhập và tra cứu BTC (T09, T10). |
-| **23/09 – Chiều/tối** | Kiểm thử trên điện thoại thật (T15–T18); xử lý lỗi mạng; deploy HTTPS lên AWS; chạy toàn bộ bảng kiểm thử. |
+| **23/09 – Chiều/tối** | Kiểm thử trên điện thoại thật (T15–T18); xử lý lỗi mạng; deploy HTTPS lên AWS (S3 StaticWeb + ECS + ALB); chạy toàn bộ bảng kiểm thử. |
 
 **Khi thiếu thời gian, ưu tiên theo thứ tự:** đăng ký → chơi → lưu kết quả → BTC tra cứu → xác nhận trao quà. Giản lược nhạc nền, hiệu ứng trang trí và CI/CD pipeline (deploy tay trước, pipeline sau).
 
