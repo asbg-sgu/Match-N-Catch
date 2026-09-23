@@ -1,104 +1,85 @@
-# Match & Catch
+# Match N Catch - Full Stack Game
 
-Game nhận diện dịch vụ AWS & Google Cloud chạy trên web mobile, dành cho sự kiện CLB.
+Game đố vui về Cloud Computing (AWS × Google Cloud) với backend Django và frontend vanilla JavaScript.
 
----
+## 🎮 Tính năng
 
-## Mục lục
+- 2 vòng chơi × 10 câu hỏi
+- 3 mạng cho cả game
+- Câu bonus khi đúng 5 câu liên tiếp
+- Bảng xếp hạng realtime
+- Giới hạn 3 lượt/ngày mỗi MSSV
+- Hệ thống rewards tự động
 
-- [Tổng quan](#tổng-quan)
-- [Cấu trúc dự án](#cấu-trúc-dự-án)
-- [Yêu cầu môi trường](#yêu-cầu-môi-trường)
-- [Cài đặt & Chạy local](#cài-đặt--chạy-local)
-- [Biến môi trường](#biến-môi-trường)
-- [Database](#database)
-- [Deploy lên AWS](#deploy-lên-aws)
-- [CI/CD](#cicd)
-- [Kiểm thử](#kiểm-thử)
-
----
-
-## Tổng quan
-
-<!-- TODO: mô tả ngắn về game, luật chơi cơ bản, link QR sự kiện -->
-
----
-
-## Cấu trúc dự án
+## 🏗️ Architecture
 
 ```
-Match-N-Catch-1/
-├── backend/
-│   ├── app/
-│   │   ├── db/
-│   │   │   ├── database.py        # Kết nối MySQL
-│   │   │   ├── schema.sql         # Tạo bảng
-│   │   │   └── seed.sql           # Dữ liệu event mẫu
-│   │   ├── models/
-│   │   │   └── model.py           # ORM models
-│   │   ├── routes/
-│   │   │   └── routes.py          # API endpoints
-│   │   ├── service/
-│   │   │   └── service.py         # Business logic
-│   │   └── main.py                # Entry point FastAPI/Flask
-│   ├── data/
-│   │   ├── cards.json             # Danh sách thẻ AWS + Google Cloud
-│   │   └── bonus_questions.json   # Ngân hàng câu hỏi bonus
-│   ├── .env                       # Biến môi trường (không commit)
-│   ├── .env.example               # Mẫu biến môi trường
-│   ├── Dockerfile
-│   └── requirements.txt
-├── frontend/
-│   ├── public/
-│   └── src/
-│       ├── pages/                 # Home, Game, Bonus, Result, Admin...
-│       ├── components/            # Card, HeartBar, Leaderboard...
-│       ├── game/                  # Logic thẻ bay, vòng chơi, streak
-│       └── api/                   # Wrapper gọi backend
-├── .github/
-│   └── workflows/
-│       └── deploy.yml             # CI/CD GitHub Actions
-├── images_document/               # Hình kiến trúc, tài liệu
-└── README.md
+┌─────────────────┐         HTTP/JSON         ┌──────────────────┐
+│   Frontend      │ ◄────────────────────────► │   Backend        │
+│   (Vanilla JS)  │                            │   (Django)       │
+│   Port 8080     │                            │   Port 8000      │
+└─────────────────┘                            └──────────────────┘
+                                                        │
+                                                        ▼
+                                                ┌──────────────────┐
+                                                │   SQLite DB      │
+                                                │   - Players      │
+                                                │   - Attempts     │
+                                                │   - Rewards      │
+                                                └──────────────────┘
 ```
 
----
+## 📁 Cấu trúc Project
 
-## Yêu cầu môi trường
+```
+Match-N-Catch/
+├── frontend/                    # Frontend vanilla JS
+│   ├── js/
+│   │   ├── data.js             # Cấu hình game
+│   │   ├── game.js             # Game engine
+│   │   ├── api.js              # API client
+│   │   └── game-api-integration.js  # API integration layer
+│   ├── css/                    # Styles
+│   ├── assets/                 # Images, icons
+│   ├── index.html              # Game UI
+│   └── test-api.html           # API testing page
+│
+├── mysite/                     # Django backend
+│   ├── game/                   # Game app
+│   │   ├── models.py          # Player, GameAttempt, Reward
+│   │   ├── views.py           # API endpoints
+│   │   └── utils.py           # Business logic
+│   ├── mysite/                # Project settings
+│   │   ├── settings.py
+│   │   └── urls.py
+│   ├── manage.py
+│   └── db.sqlite3
+│
+├── SETUP.md                    # Hướng dẫn setup
+├── CHECKLIST.md               # Checklist tích hợp
+└── test-integration.sh        # Test script
+```
 
-| Công cụ | Phiên bản tối thiểu |
-|---|---|
-| Python | 3.11+ |
-| Node.js | 18+ |
-| MySQL | 8.0+ |
-| Docker | 24+ |
+## 🚀 Quick Start
 
----
-
-## Cài đặt & Chạy local
-
-### Backend
+### 1. Backend Setup
 
 ```bash
-cd backend
+cd mysite
 
-# Tạo virtualenv và cài dependencies
-python -m venv venv
-venv\Scripts\activate        # Windows
-pip install -r requirements.txt
+# Cài dependencies
+pip install django djangorestframework django-cors-headers coreapi
 
-# Copy và điền biến môi trường
-cp .env.example .env
-
-# Khởi tạo database (chạy lần đầu)
-mysql -u <user> -p <db_name> < app/db/schema.sql
-mysql -u <user> -p <db_name> < app/db/seed.sql
+# Migrate database
+python manage.py migrate
 
 # Chạy server
-# TODO: thêm lệnh chạy (uvicorn app.main:app --reload hoặc flask run)
+python manage.py runserver
 ```
 
-### Frontend
+Backend chạy tại: http://localhost:8000
+
+### 2. Frontend Setup
 
 ```bash
 cd frontend
@@ -110,115 +91,161 @@ npm install
 npm run dev
 ```
 
----
+Frontend chạy tại: http://localhost:8080
 
-## Biến môi trường
-
-Xem file [`backend/.env.example`](backend/.env.example) để biết danh sách đầy đủ.
-
-| Biến | Mô tả | Ví dụ |
-|---|---|---|
-| `DB_HOST` | Endpoint RDS | `xxx.rds.amazonaws.com` |
-| `DB_PORT` | Cổng MySQL | `3306` |
-| `DB_NAME` | Tên database | `match_and_catch` |
-| `DB_USER` | Username DB | `admin` |
-| `DB_PASSWORD` | Password DB — lưu trong Secrets Manager | — |
-| `REWARD_THRESHOLD` | Ngưỡng điểm nhận quà | `12` |
-| `EVENT_ID` | UUID sự kiện hiện tại | `a1b2c3d4-...` |
-| `ADMIN_USERNAME` | Tài khoản BTC | `btc_admin` |
-| `ADMIN_PASSWORD` | Mật khẩu BTC — lưu trong Secrets Manager | — |
-| `SECRET_KEY` | Ký session token | random string |
-| `CORS_ORIGINS` | Domain frontend | `https://...` |
-
-> **Lưu ý:** `DB_PASSWORD` và `ADMIN_PASSWORD` được lưu trong **AWS Secrets Manager**, không hardcode trong `.env` khi deploy.
-
----
-
-## Database
-
-Schema gồm 4 bảng: `event`, `player`, `game_attempt`, `reward_claim`.
+### 3. Test
 
 ```bash
-# Tạo bảng
-mysql -u <user> -p <db_name> < backend/app/db/schema.sql
+# Run test script
+bash test-integration.sh
 
-# Seed event mẫu
-mysql -u <user> -p <db_name> < backend/app/db/seed.sql
+# Hoặc test thủ công
+# Open: http://localhost:8080/test-api.html
 ```
 
-UUID của event mẫu: `a1b2c3d4-e5f6-7890-abcd-ef1234567890` — copy vào `EVENT_ID` trong `.env`.
+## 🧪 API Endpoints
 
----
+| Endpoint | Method | Mô tả |
+|----------|--------|-------|
+| `/api/players/` | POST | Đăng ký player với tên + MSSV |
+| `/api/game/start/` | POST | Bắt đầu game mới |
+| `/api/game/submit/` | POST | Gửi kết quả game |
+| `/api/leaderboard/` | GET | Lấy bảng xếp hạng |
+| `/api/rewards/me/` | GET | Kiểm tra lượt chơi còn lại |
+| `/health/` | GET | Health check |
+| `/docs/` | GET | API documentation |
 
-## Deploy lên AWS
-
-Kiến trúc: **S3 StaticWeb** (Frontend) + **ECS Fargate + ALB** trong VPC (Backend) + **RDS MySQL**.
-
-<!-- TODO: điền các bước cụ thể sau khi setup xong infrastructure -->
-
-### Các bước tổng quát
-
-1. **RDS** — Tạo MySQL instance trong private subnet, lưu credentials vào Secrets Manager
-2. **ECR** — Tạo repository, build và push Docker image backend
-3. **ECS** — Tạo cluster, task definition (lấy image từ ECR), service gắn với ALB
-4. **ALB** — Tạo Application Load Balancer trong VPC, target group trỏ vào ECS service
-5. **S3** — Enable Static Website Hosting, upload build frontend
-6. **IAM** — Tạo role cho ECS task: quyền đọc Secrets Manager, pull ECR, ghi CloudWatch
-
----
-
-## CI/CD
-
-GitHub Actions tại `.github/workflows/deploy.yml`:
+## 🎯 Game Flow
 
 ```
-Push to main
-  └─► Build Docker image
-        └─► Push lên Amazon ECR
-              └─► Deploy lên Amazon ECS (force new deployment)
+1. User nhập tên + MSSV
+        ↓
+2. registerPlayer() → Backend trả player_id
+        ↓
+3. startGame(player_id) → Backend trả attempt_id
+        ↓
+4. User chơi game (frontend)
+        ↓
+5. submitGame(attempt_id, score) → Backend lưu kết quả
+        ↓
+6. getLeaderboard() → Hiển thị bảng xếp hạng
 ```
 
-<!-- TODO: điền ARN ECR repository, ECS cluster name, service name vào workflow -->
+## 🔧 Configuration
 
-**Secrets cần thêm vào GitHub repository:**
+### Backend (mysite/mysite/settings.py):
+```python
+# CORS
+CORS_ALLOW_ALL_ORIGINS = True  # Development only
 
-| Secret | Mô tả |
-|---|---|
-| `AWS_ACCESS_KEY_ID` | IAM access key |
-| `AWS_SECRET_ACCESS_KEY` | IAM secret key |
-| `AWS_REGION` | Region deploy |
-| `ECR_REPOSITORY` | Tên ECR repository |
-| `ECS_CLUSTER` | Tên ECS cluster |
-| `ECS_SERVICE` | Tên ECS service |
+# Game config
+EVENT_ID = 'event-techfest-2026'
+REWARD_THRESHOLD = 12
+```
 
----
+### Frontend (frontend/js/api.js):
+```javascript
+const API_BASE = 'http://localhost:8000/api';
+```
 
-## Kiểm thử
+## 📊 Database Models
 
-<!-- TODO: điền lệnh chạy test sau khi setup pytest/postman collection -->
+### Player
+- `name`: Tên hiển thị
+- `student_id`: MSSV (unique)
+- `created_at`: Timestamp
 
+### GameAttempt
+- `player`: ForeignKey to Player
+- `attempt_id`: UUID unique
+- `score`: Điểm số
+- `details`: JSON (rounds, bonus, etc)
+- `played_at`: Timestamp
+
+### Reward
+- `player`: ForeignKey to Player
+- `earned_date`: Ngày nhận
+- `redeemed`: Đã đổi quà chưa
+
+## 🛠️ Development
+
+### Backend Development:
 ```bash
-# Chạy unit test backend
-cd backend
-pytest tests/
-
-# Chạy integration test (Postman)
-# TODO: link collection Postman
+cd mysite
+python manage.py shell  # Django shell
+python manage.py createsuperuser  # Tạo admin
+# Admin: http://localhost:8000/admin/
 ```
 
-Bảng kiểm thử đầy đủ (T01–T19) xem tại [PRD](Match_and_Catch_MVP_Revised%20(2).md#9-kiểm-thử-nghiệm-thu).
+### Frontend Development:
+- Edit files trong `frontend/js/`
+- Refresh browser để xem thay đổi
+- Check Console (F12) để debug
 
----
+## 📝 Logs & Debug
 
-## Thành viên
+### Backend logs:
+- Terminal đang chạy `runserver`
+- Django logs mỗi request
 
-<!-- TODO: điền tên thành viên và phụ trách -->
+### Frontend logs:
+- Browser Console (F12)
+- Network tab để xem API calls
+- Check `currentPlayerId` và `currentAttemptId`
 
-| Tên | Phụ trách |
-|---|---|
-| ... | Database & Migration |
-| ... | Player & Auth Service |
-| ... | Game Engine & Scoring |
-| ... | Leaderboard & Rewards |
-| ... | Admin & Reward Management |
-| ... | DevOps & Testing |
+## ⚠️ Troubleshooting
+
+**CORS Error:**
+```bash
+# Restart Django server
+cd mysite && python manage.py runserver
+```
+
+**API 404:**
+```bash
+# Check endpoints
+curl http://localhost:8000/api/players/
+```
+
+**Frontend không kết nối:**
+```bash
+# Check API_BASE trong js/api.js
+const API_BASE = 'http://localhost:8000/api';
+```
+
+## 📦 Dependencies
+
+### Backend:
+- Django 5.0
+- djangorestframework
+- django-cors-headers
+- coreapi (cho docs)
+
+### Frontend:
+- Vanilla JavaScript (no framework)
+- HTML5 Canvas (confetti effect)
+
+## 🚢 Production Deployment
+
+1. Set `DEBUG = False` trong settings.py
+2. Configure proper CORS origins
+3. Use production database (PostgreSQL)
+4. Collect static files: `python manage.py collectstatic`
+5. Use gunicorn/uwsgi cho Django
+6. Serve frontend qua nginx/apache
+7. Update `API_BASE` trong js/api.js
+
+## 📄 Documentation
+
+- [SETUP.md](SETUP.md) - Chi tiết setup
+- [CHECKLIST.md](CHECKLIST.md) - Checklist tích hợp
+- [frontend/API_INTEGRATION.md](frontend/API_INTEGRATION.md) - API integration
+- [frontend/INTEGRATION_SUMMARY.md](frontend/INTEGRATION_SUMMARY.md) - Tổng kết
+
+## 👥 Team
+
+Match N Catch MVP - CLB Cloud SGU
+
+## 📅 Version
+
+Current: v0.4 - Full Stack Integration (2026-09-23)

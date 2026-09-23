@@ -11,9 +11,30 @@ Static web thuần (HTML + CSS + JS, không build step) — deploy được ngay
 ## Chạy thử
 
 ```bash
-cd aws-flying-quiz
-python3 -m http.server 8642
-# mở http://localhost:8642/ trên trình duyệt (DevTools → iPhone 12 Pro)
+# Cài dependencies
+npm install
+
+# Chạy dev server
+npm run dev
+
+# Mở http://localhost:8080/ trên trình duyệt (DevTools → iPhone 12 Pro)
+```
+
+## Backend Integration
+
+Frontend đã tích hợp với Django backend:
+- `js/api.js` - API client
+- `js/game-api-integration.js` - Kết nối backend
+
+Backend phải chạy tại: `http://localhost:8000`
+
+```bash
+# Terminal 1 - Backend
+cd ../mysite
+python manage.py runserver
+
+# Terminal 2 - Frontend
+npm run dev
 ```
 
 ## Luật chơi (khớp PRD Match & Catch, cập nhật theo concept v3 "Flying Quiz")
