@@ -1,0 +1,10 @@
+# Django Backend for Match & Catch Game
+Django>=5.0.0
+djangorestframework>=3.14.0
+django-cors-headers>=4.3.0
+python-dotenv>=1.0.0
+pymysql>=1.1.0
+
+# Development dependencies
+pytest>=8.0.0
+pytest-django>=4.5.0

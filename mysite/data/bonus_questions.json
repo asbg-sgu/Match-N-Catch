@@ -1,0 +1,106 @@
+[
+  {
+    "id": "bq-s3-usage",
+    "service_name": "Amazon S3",
+    "question": "Amazon S3 có thể được sử dụng cho những trường hợp nào dưới đây?",
+    "options": [
+      "Lưu trữ và truy xuất đối tượng (object storage) với độ bền cao (99.999999999%)",
+      "Lưu trữ và phục vụ nội dung tĩnh cho website (Static Website Hosting)",
+      "Chạy trực tiếp máy ảo Windows hoặc Linux",
+      "Quản lý cơ sở dữ liệu quan hệ có hỗ trợ câu lệnh JOIN phức tạp"
+    ],
+    "correct_indices": [0, 1],
+    "explanation": "Amazon S3 là dịch vụ lưu trữ đối tượng và có tính năng Static Website Hosting, không phải là máy ảo tính toán (EC2) hay cơ sở dữ liệu quan hệ (RDS)."
+  },
+  {
+    "id": "bq-ec2-features",
+    "service_name": "Amazon EC2",
+    "question": "Những đặc điểm nào sau đây là ĐÚNG về Amazon EC2?",
+    "options": [
+      "Cung cấp máy chủ ảo có thể tùy chỉnh cấu hình CPU, RAM và hệ điều hành",
+      "Hỗ trợ Auto Scaling để tự động tăng/giảm số lượng máy ảo theo tải",
+      "Chỉ hỗ trợ chạy code tối đa 15 phút cho mỗi tác vụ",
+      "Chỉ lưu trữ file tĩnh mà không có khả năng tính toán"
+    ],
+    "correct_indices": [0, 1],
+    "explanation": "EC2 cung cấp máy chủ ảo linh hoạt và hỗ trợ Auto Scaling; giới hạn 15 phút là của AWS Lambda."
+  },
+  {
+    "id": "bq-lambda-concept",
+    "service_name": "AWS Lambda",
+    "question": "Đặc trưng nào sau đây mô tả đúng nhất về AWS Lambda?",
+    "options": [
+      "Mô hình Serverless: chỉ trả tiền khi code thực thi (pay-per-use)",
+      "Tự động co giãn theo số lượng request mà không cần cấu hình server",
+      "Người dùng phải tự cài đặt bản vá hệ điều hành (OS patching) định kỳ",
+      "Chỉ cho phép chạy duy nhất một ngôn ngữ lập trình là Python"
+    ],
+    "correct_indices": [0, 1],
+    "explanation": "AWS Lambda là Serverless, tự động co giãn và người dùng không cần quản lý máy chủ hay cài bản vá OS. Lambda hỗ trợ Node.js, Python, Java, Go, C#..."
+  },
+  {
+    "id": "bq-rds-engines",
+    "service_name": "Amazon RDS",
+    "question": "Amazon RDS hỗ trợ những hệ quản trị cơ sở dữ liệu quan hệ nào sau đây?",
+    "options": [
+      "MySQL",
+      "PostgreSQL",
+      "MongoDB (dạng tài liệu NoSQL)",
+      "MariaDB"
+    ],
+    "correct_indices": [0, 1, 3],
+    "explanation": "Amazon RDS hỗ trợ MySQL, PostgreSQL, MariaDB, Oracle, SQL Server, Aurora. MongoDB là NoSQL (tương ứng trên AWS là Amazon DocumentDB)."
+  },
+  {
+    "id": "bq-dynamodb-traits",
+    "service_name": "Amazon DynamoDB",
+    "question": "Những nhận định nào sau đây là ĐÚNG về Amazon DynamoDB?",
+    "options": [
+      "Là cơ sở dữ liệu NoSQL dạng Key-Value và Document có độ trễ một chữ số mili-giây",
+      "Hoàn toàn Serverless, hỗ trợ chế độ On-Demand Capacity",
+      "Đòi hỏi người dùng phải định nghĩa cấu trúc bảng quan hệ (Schema) cố định trước khi chèn dữ liệu",
+      "Tự động nhân bản dữ liệu qua nhiều Availability Zone (AZ)"
+    ],
+    "correct_indices": [0, 1, 3],
+    "explanation": "DynamoDB là NoSQL Serverless, tự động replicate đa AZ và không yêu cầu schema cứng nhắc."
+  },
+  {
+    "id": "bq-cloudwatch-role",
+    "service_name": "Amazon CloudWatch",
+    "question": "Amazon CloudWatch được dùng để làm gì trong kiến trúc AWS?",
+    "options": [
+      "Thu thập và theo dõi các chỉ số (metrics) hiệu năng như CPU, Network, Disk",
+      "Thiết lập cảnh báo (Alarms) tự động gửi thông báo hoặc kích hoạt Auto Scaling",
+      "Biên dịch mã nguồn dự án thành file thực thi",
+      "Quản lý tên miền và DNS nội bộ"
+    ],
+    "correct_indices": [0, 1],
+    "explanation": "CloudWatch thu thập log/metric và thiết lập cảnh báo; quản lý DNS là Route 53; biên dịch mã nguồn là CodeBuild."
+  },
+  {
+    "id": "bq-cloudfront-benefits",
+    "service_name": "Amazon CloudFront",
+    "question": "Lợi ích nổi bật khi sử dụng dịch vụ Amazon CloudFront là gì?",
+    "options": [
+      "Mạng phân phối nội dung (CDN) giúp giảm độ trễ truy cập nhờ mạng lưới Edge Locations toàn cầu",
+      "Tích hợp bảo vệ chống tấn công DDoS thông qua AWS Shield",
+      "Tự động tối ưu hóa câu lệnh SQL cho cơ sở dữ liệu",
+      "Hỗ trợ bộ nhớ đệm (Caching) nội dung tĩnh và động"
+    ],
+    "correct_indices": [0, 1, 3],
+    "explanation": "CloudFront là CDN toàn cầu, hỗ trợ caching và bảo mật DDoS; không liên quan đến tối ưu SQL."
+  },
+  {
+    "id": "bq-iam-security",
+    "service_name": "AWS IAM",
+    "question": "AWS Identity and Access Management (IAM) cho phép bạn quản lý những đối tượng nào?",
+    "options": [
+      "IAM Users (người dùng riêng lẻ)",
+      "IAM Roles (vai trò được gán tạm thời cho người dùng hoặc dịch vụ khác)",
+      "Dung lượng ổ đĩa SSD đính kèm máy chủ",
+      "IAM Policies (chính sách cấp phép dạng JSON quy định hành động được phép/bị từ chối)"
+    ],
+    "correct_indices": [0, 1, 3],
+    "explanation": "IAM quản lý Users, Groups, Roles, Policies. Dung lượng ổ đĩa do EBS hoặc máy ảo quản lý."
+  }
+]
