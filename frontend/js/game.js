@@ -409,8 +409,9 @@ function spawnAnswers(q) {
       respawnDelay: rand(280, 520),
       crossings: 0,
       tx: stt.x0, ty: stt.y0,
+      inv: 1 / (Math.hypot(stt.vx, stt.vy) || 1), // nghịch đảo độ dài v — tính 1 lần, khỏi hypot mỗi frame
     };
-    a.el.style.transform = 'translate3d(' + a.x + 'px,' + a.y + 'px,0) rotate(' + a.rot + 'deg)';
+    a.el.style.transform = 'translate3d(' + a.x.toFixed(1) + 'px,' + a.y.toFixed(1) + 'px,0) rotate(' + a.rot.toFixed(2) + 'deg)';
     return a;
   });
   ensureLoop();
@@ -423,6 +424,7 @@ function respawn(a) {
   const lane = a.pattern === 'diagonal' ? a.lane : randInt(0, 3);
   const stt = entryState(a.pattern, a.i, W, H, a.w, a.h, lane, a.rev);
   a.x = stt.x0; a.y = stt.y0; a.vx = stt.vx; a.vy = stt.vy;
+  a.inv = 1 / (Math.hypot(stt.vx, stt.vy) || 1);
   a.swayT = rand(0, Math.PI * 2);
   a.crossings++;
 }
@@ -473,13 +475,12 @@ function ensureLoop() {
             if (a.kind === 'h') oy = s * a.sway.amp;
             else if (a.kind === 'v') ox = s * a.sway.amp;
             else {
-              const len = Math.hypot(a.vx, a.vy) || 1;
-              ox = -a.vy / len * s * a.sway.amp;
-              oy = a.vx / len * s * a.sway.amp;
+              ox = -a.vy * a.inv * s * a.sway.amp;
+              oy = a.vx * a.inv * s * a.sway.amp;
             }
-            a.rotNow = a.rot + s * 5; // vẫy đuôi như cá đang bơi
+            a.rotNow = a.rot + s * 2.5; // vẫy nhẹ (trước ±5° gây raster lại liên tục trên mobile)
             a.tx = a.x + ox; a.ty = a.y + oy;
-            a.el.style.transform = 'translate3d(' + a.tx + 'px,' + a.ty + 'px,0) rotate(' + a.rotNow + 'deg)';
+            a.el.style.transform = 'translate3d(' + a.tx.toFixed(1) + 'px,' + a.ty.toFixed(1) + 'px,0) rotate(' + a.rotNow.toFixed(2) + 'deg)';
             if (isOff(a, W, H)) { a.mode = 'wait'; a.wait = a.respawnDelay; a.needsRespawn = true; }
           }
         }
@@ -499,14 +500,28 @@ function stopLoop() {
   S.lastTs = 0;
 }
 function renderTimer(holderId, numId, ringId, remain, total) {
-  const frac = Math.max(0, Math.min(1, remain / total));
-  const ring = $('#' + ringId);
-  const C = ringId === 'ring' ? 100.53 : 150.8;
-  ring.style.strokeDashoffset = (C * (1 - frac)).toFixed(1);
-  $('#' + numId).textContent = Math.ceil(remain / 1000);
-  const holder = $('#' + holderId);
-  holder.classList.toggle('danger', remain <= 1500);
-  holder.classList.toggle('warn', remain > 1500 && remain <= 2800);
+  const holder = document.getElementById(holderId);
+  // Vòng ring: throttle ~10fps (đủ mượt cho timer 5s, giảm 6x ghi DOM so với 60fps)
+  const now = performance.now();
+  if (!holder._lastRing || now - holder._lastRing > 100) {
+    holder._lastRing = now;
+    const frac = Math.max(0, Math.min(1, remain / total));
+    const C = ringId === 'ring' ? 100.53 : 150.8;
+    document.getElementById(ringId).style.strokeDashoffset = (C * (1 - frac)).toFixed(1);
+  }
+  // Số giây: chỉ ghi DOM khi đổi số (tránh layout thrash mỗi frame)
+  const sec = Math.ceil(remain / 1000);
+  if (holder._lastSec !== sec) {
+    holder._lastSec = sec;
+    document.getElementById(numId).textContent = sec;
+  }
+  // Màu cảnh báo: chỉ chạm classList khi đổi bucket
+  const bucket = remain <= 1500 ? 'danger' : (remain <= 2800 ? 'warn' : '');
+  if (holder._lastBucket !== bucket) {
+    holder._lastBucket = bucket;
+    holder.classList.toggle('danger', bucket === 'danger');
+    holder.classList.toggle('warn', bucket === 'warn');
+  }
 }
 
 /* ---------- xử lý chạm ---------- */
