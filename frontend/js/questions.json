@@ -1,0 +1,486 @@
+{
+  "version": 1,
+  "note": "Khung JSON mẫu cho BẮT MÂY. Anh tác giả câu hỏi chỉ cần sửa/thêm object theo đúng schema này rồi thay file js/questions.json (hoặc để API trả về object tương tự qua window.__QUESTION_PACK trước khi game.js chạy). Mặc định: câu thường 5000ms (CFG.qTime), bonus 10000ms trừ khi có timeLimitMs riêng.",
+  "rounds": [
+    {
+      "id": 1,
+      "title": "Nhận diện nhà cung cấp",
+      "questions": [
+        {
+          "id": "r1-s3",
+          "provider": "aws",
+          "text": "Amazon S3 thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/aws/s3.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-s3-1", "label": "Amazon Web Service", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-s3-2", "label": "Go0gle Cloud", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "aws"
+        },
+        {
+          "id": "r1-lambda",
+          "provider": "aws",
+          "text": "AWS Lambda thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/aws/lambda.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-lambda-1", "label": "Amazone Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-lambda-2", "label": "Gooogle Cloud", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "aws"
+        },
+        {
+          "id": "r1-ec2",
+          "provider": "aws",
+          "text": "Amazon EC2 thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/aws/ec2.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-ec2-1", "label": "Amazon Web Servcies", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-ec2-2", "label": "Google Cloude", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "aws"
+        },
+        {
+          "id": "r1-rds",
+          "provider": "aws",
+          "text": "Amazon RDS thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/aws/rds.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-rds-1", "label": "Amazan Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-rds-2", "label": "Google Clound", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "aws"
+        },
+        {
+          "id": "r1-dynamodb",
+          "provider": "aws",
+          "text": "Amazon DynamoDB thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/aws/dynamodb.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-dynamodb-1", "label": "Amazon Web-Service", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-dynamodb-2", "label": "Googel Cloud", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "aws"
+        },
+        {
+          "id": "r1-sqs",
+          "provider": "aws",
+          "text": "Amazon SQS thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/aws/sqs.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-sqs-1", "label": "Amazon Web Service", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-sqs-2", "label": "Gooogle Cloud", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "aws"
+        },
+        {
+          "id": "r1-route53",
+          "provider": "aws",
+          "text": "Amazon Route 53 thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/aws/route53.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-route53-1", "label": "Amazone Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-route53-2", "label": "Google Cloude", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "aws"
+        },
+        {
+          "id": "r1-eks",
+          "provider": "aws",
+          "text": "Amazon EKS thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/aws/eks.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-eks-1", "label": "Amazon Web Servcies", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-eks-2", "label": "Go0gle Cloud", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "aws"
+        },
+        {
+          "id": "r1-redshift",
+          "provider": "aws",
+          "text": "Amazon Redshift thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/aws/redshift.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-redshift-1", "label": "Amazan Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-redshift-2", "label": "Google Clound", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "aws"
+        },
+        {
+          "id": "r1-cloudfront",
+          "provider": "aws",
+          "text": "Amazon CloudFront thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/aws/cloudfront.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-cloudfront-1", "label": "Amazon Web-Service", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-cloudfront-2", "label": "Googel Cloud", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "aws"
+        },
+        {
+          "id": "r1-bigquery",
+          "provider": "gcp",
+          "text": "BigQuery thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/gcp/bigquery.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-bigquery-1", "label": "Amazon Web Service", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-bigquery-2", "label": "Go0gle Cloud", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "gcp"
+        },
+        {
+          "id": "r1-gcs",
+          "provider": "gcp",
+          "text": "Cloud Storage thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/gcp/storage.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-gcs-1", "label": "Amazone Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-gcs-2", "label": "Gooogle Cloud", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "gcp"
+        },
+        {
+          "id": "r1-run",
+          "provider": "gcp",
+          "text": "Cloud Run thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/gcp/run.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-run-1", "label": "Amazon Web Servcies", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-run-2", "label": "Google Cloude", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "gcp"
+        },
+        {
+          "id": "r1-gce",
+          "provider": "gcp",
+          "text": "Compute Engine thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/gcp/compute.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-gce-1", "label": "Amazan Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-gce-2", "label": "Google Clound", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "gcp"
+        },
+        {
+          "id": "r1-sql",
+          "provider": "gcp",
+          "text": "Cloud SQL thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/gcp/sql.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-sql-1", "label": "Amazon Web-Service", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-sql-2", "label": "Googel Cloud", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "gcp"
+        },
+        {
+          "id": "r1-firestore",
+          "provider": "gcp",
+          "text": "Firestore thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/gcp/firestore.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-firestore-1", "label": "Amazon Web Service", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-firestore-2", "label": "Gooogle Cloud", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "gcp"
+        },
+        {
+          "id": "r1-pubsub",
+          "provider": "gcp",
+          "text": "Pub/Sub thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/gcp/pubsub.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-pubsub-1", "label": "Amazone Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-pubsub-2", "label": "Google Cloude", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "gcp"
+        },
+        {
+          "id": "r1-dns",
+          "provider": "gcp",
+          "text": "Cloud DNS thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/gcp/dns.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-dns-1", "label": "Amazon Web Servcies", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-dns-2", "label": "Go0gle Cloud", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "gcp"
+        },
+        {
+          "id": "r1-gke",
+          "provider": "gcp",
+          "text": "Google Kubernetes Engine thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/gcp/gke.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-gke-1", "label": "Amazan Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-gke-2", "label": "Google Clound", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "gcp"
+        },
+        {
+          "id": "r1-cdn",
+          "provider": "gcp",
+          "text": "Cloud CDN thuộc nhà cung cấp đám mây nào?",
+          "icon": "assets/icons/gcp/cdn.svg",
+          "options": [
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
+            { "id": "fx-r1-cdn-1", "label": "Amazon Web-Service", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-cdn-2", "label": "Googel Cloud", "icon": "assets/icons/brands/gcp.svg" }
+          ],
+          "correctOptionId": "gcp"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Hiểu dịch vụ AWS",
+      "questions": [
+        {
+          "id": "r2-s3",
+          "text": "Amazon S3 chủ yếu dùng để làm gì?",
+          "icon": "assets/icons/aws/s3.svg",
+          "options": [
+            { "id": "a", "label": "Lưu trữ object (Object Storage)" },
+            { "id": "b", "label": "Chạy máy ảo (VM)" },
+            { "id": "c", "label": "Hàng đợi tin nhắn (Message Queue)" }
+          ],
+          "correctOptionId": "a"
+        },
+        {
+          "id": "r2-lambda",
+          "text": "AWS Lambda dùng để làm gì?",
+          "icon": "assets/icons/aws/lambda.svg",
+          "options": [
+            { "id": "a", "label": "Chạy code không cần quản lý server" },
+            { "id": "b", "label": "Lưu trữ file tĩnh" },
+            { "id": "c", "label": "Phân phối nội dung CDN" }
+          ],
+          "correctOptionId": "a"
+        },
+        {
+          "id": "r2-ec2",
+          "text": "Amazon EC2 cung cấp gì?",
+          "icon": "assets/icons/aws/ec2.svg",
+          "options": [
+            { "id": "a", "label": "Máy chủ ảo trên đám mây" },
+            { "id": "b", "label": "Dịch vụ DNS tên miền" },
+            { "id": "c", "label": "Kho dữ liệu phân tích" }
+          ],
+          "correctOptionId": "a"
+        },
+        {
+          "id": "r2-rds",
+          "text": "Amazon RDS là dịch vụ gì?",
+          "icon": "assets/icons/aws/rds.svg",
+          "options": [
+            { "id": "a", "label": "Cơ sở dữ liệu quan hệ được quản lý" },
+            { "id": "b", "label": "Serverless compute" },
+            { "id": "c", "label": "Mạng phân phối nội dung" }
+          ],
+          "correctOptionId": "a"
+        },
+        {
+          "id": "r2-dynamodb",
+          "text": "Amazon DynamoDB là loại database nào?",
+          "icon": "assets/icons/aws/dynamodb.svg",
+          "options": [
+            { "id": "a", "label": "NoSQL key-value" },
+            { "id": "b", "label": "SQL quan hệ" },
+            { "id": "c", "label": "Data warehouse" }
+          ],
+          "correctOptionId": "a"
+        },
+        {
+          "id": "r2-sqs",
+          "text": "Amazon SQS giúp giải quyết nhu cầu nào?",
+          "icon": "assets/icons/aws/sqs.svg",
+          "options": [
+            { "id": "a", "label": "Tách rời dịch vụ bằng hàng đợi tin nhắn" },
+            { "id": "b", "label": "Tăng tốc độ tải website" },
+            { "id": "c", "label": "Quản lý tên miền" }
+          ],
+          "correctOptionId": "a"
+        },
+        {
+          "id": "r2-route53",
+          "text": "Amazon Route 53 dùng chủ yếu cho việc gì?",
+          "icon": "assets/icons/aws/route53.svg",
+          "options": [
+            { "id": "a", "label": "DNS và định tuyến tên miền" },
+            { "id": "b", "label": "Lưu trữ dữ liệu" },
+            { "id": "c", "label": "Chạy code serverless" }
+          ],
+          "correctOptionId": "a"
+        },
+        {
+          "id": "r2-cloudfront",
+          "text": "Amazon CloudFront là gì?",
+          "icon": "assets/icons/aws/cloudfront.svg",
+          "options": [
+            { "id": "a", "label": "Mạng phân phối nội dung (CDN)" },
+            { "id": "b", "label": "Cơ sở dữ liệu NoSQL" },
+            { "id": "c", "label": "Máy chủ ảo" }
+          ],
+          "correctOptionId": "a"
+        },
+        {
+          "id": "r2-eks",
+          "text": "Amazon EKS giúp bạn làm gì?",
+          "icon": "assets/icons/aws/eks.svg",
+          "options": [
+            { "id": "a", "label": "Chạy Kubernetes được quản lý" },
+            { "id": "b", "label": "Gửi email hàng loạt" },
+            { "id": "c", "label": "Kho dữ liệu phân tích" }
+          ],
+          "correctOptionId": "a"
+        },
+        {
+          "id": "r2-redshift",
+          "text": "Amazon Redshift dùng cho mục đích nào?",
+          "icon": "assets/icons/aws/redshift.svg",
+          "options": [
+            { "id": "a", "label": "Kho dữ liệu phân tích (Data warehouse)" },
+            { "id": "b", "label": "Máy chủ ảo" },
+            { "id": "c", "label": "Dịch vụ DNS" }
+          ],
+          "correctOptionId": "a"
+        },
+        {
+          "id": "r2-cloudwatch",
+          "text": "Amazon CloudWatch dùng để làm gì?",
+          "icon": "assets/icons/aws/cloudwatch.svg",
+          "options": [
+            { "id": "a", "label": "Giám sát, theo dõi log và metric" },
+            { "id": "b", "label": "Mạng phân phối nội dung" },
+            { "id": "c", "label": "Database NoSQL" }
+          ],
+          "correctOptionId": "a"
+        },
+        {
+          "id": "r2-apigateway",
+          "text": "Amazon API Gateway dùng để làm gì?",
+          "icon": "assets/icons/aws/apigateway.svg",
+          "options": [
+            { "id": "a", "label": "Tạo và quản lý API" },
+            { "id": "b", "label": "Lưu trữ object" },
+            { "id": "c", "label": "Hàng đợi tin nhắn" }
+          ],
+          "correctOptionId": "a"
+        },
+        {
+          "id": "r2-sns",
+          "text": "Amazon SNS dùng để làm gì?",
+          "icon": "assets/icons/aws/sns.svg",
+          "options": [
+            { "id": "a", "label": "Gửi thông báo publish/subscribe" },
+            { "id": "b", "label": "Máy chủ ảo" },
+            { "id": "c", "label": "Quản lý tên miền" }
+          ],
+          "correctOptionId": "a"
+        },
+        {
+          "id": "r2-vpc",
+          "text": "Amazon VPC dùng để làm gì?",
+          "icon": "assets/icons/aws/vpc.svg",
+          "options": [
+            { "id": "a", "label": "Tạo mạng riêng ảo biệt lập" },
+            { "id": "b", "label": "Lưu trữ file" },
+            { "id": "c", "label": "Chạy code serverless" }
+          ],
+          "correctOptionId": "a"
+        }
+      ]
+    }
+  ],
+  "bonus": [
+    {
+      "id": "mb1",
+      "difficulty": "basic",
+      "timeLimitMs": 15000,
+      "text": "Shop online cần chỗ lưu ảnh sản phẩm VÀ tự động tạo ảnh thumbnail mỗi khi có ảnh mới, không quản lý server. Chọn TẤT CẢ dịch vụ cần dùng.",
+      "options": [
+        { "id": "o1", "name": "Amazon S3", "tag": "Object storage", "icon": "assets/icons/aws/s3.svg" },
+        { "id": "o2", "name": "AWS Lambda", "tag": "Serverless compute", "icon": "assets/icons/aws/lambda.svg" },
+        { "id": "o3", "name": "Amazon RDS", "tag": "Database quan hệ", "icon": "assets/icons/aws/rds.svg" },
+        { "id": "o4", "name": "Amazon Route 53", "tag": "DNS", "icon": "assets/icons/aws/route53.svg" }
+      ],
+      "correctOptionIds": ["o1", "o2"]
+    },
+    {
+      "id": "mb2",
+      "difficulty": "basic",
+      "timeLimitMs": 15000,
+      "text": "Người dùng ở khắp thế giới cần web tải nhanh, file gốc phải lưu bền và rẻ. Chọn TẤT CẢ dịch vụ cần dùng.",
+      "options": [
+        { "id": "o1", "name": "Amazon CloudFront", "tag": "CDN toàn cầu", "icon": "assets/icons/aws/cloudfront.svg" },
+        { "id": "o2", "name": "Amazon S3", "tag": "Object storage", "icon": "assets/icons/aws/s3.svg" },
+        { "id": "o3", "name": "Amazon DynamoDB", "tag": "NoSQL key-value", "icon": "assets/icons/aws/dynamodb.svg" },
+        { "id": "o4", "name": "Amazon EC2", "tag": "Máy chủ ảo", "icon": "assets/icons/aws/ec2.svg" }
+      ],
+      "correctOptionIds": ["o1", "o2"]
+    },
+    {
+      "id": "mb3",
+      "difficulty": "inter",
+      "timeLimitMs": 15000,
+      "text": "Đơn hàng không được mất khi bộ xử lý đang bận, đồng thời phải báo realtime về app khách. Chọn TẤT CẢ dịch vụ cần dùng.",
+      "options": [
+        { "id": "o1", "name": "Amazon SQS", "tag": "Hàng đợi tin nhắn", "icon": "assets/icons/aws/sqs.svg" },
+        { "id": "o2", "name": "Amazon SNS", "tag": "Thông báo pub/sub", "icon": "assets/icons/aws/sns.svg" },
+        { "id": "o3", "name": "Amazon EC2", "tag": "Máy chủ ảo", "icon": "assets/icons/aws/ec2.svg" },
+        { "id": "o4", "name": "Amazon CloudWatch", "tag": "Giám sát", "icon": "assets/icons/aws/cloudwatch.svg" }
+      ],
+      "correctOptionIds": ["o1", "o2"]
+    },
+    {
+      "id": "mb4",
+      "difficulty": "inter",
+      "timeLimitMs": 15000,
+      "text": "Hệ thống microservice cần mạng riêng biệt lập và DNS nội bộ để gọi nhau. Chọn TẤT CẢ dịch vụ cần dùng.",
+      "options": [
+        { "id": "o1", "name": "Amazon VPC", "tag": "Mạng riêng ảo", "icon": "assets/icons/aws/vpc.svg" },
+        { "id": "o2", "name": "Amazon Route 53", "tag": "DNS", "icon": "assets/icons/aws/route53.svg" },
+        { "id": "o3", "name": "Amazon S3", "tag": "Object storage", "icon": "assets/icons/aws/s3.svg" },
+        { "id": "o4", "name": "Amazon CloudFront", "tag": "CDN toàn cầu", "icon": "assets/icons/aws/cloudfront.svg" }
+      ],
+      "correctOptionIds": ["o1", "o2"]
+    }
+  ]
+}
