@@ -214,8 +214,8 @@ function countdown(go) {
   }, 760);
   TO.push(iv);
 }
-/* Tốc độ bay tăng CFG.speedStep (20%) mỗi block 5 câu toàn lượt 1–20:
-   câu 1–5 ×1.0 · 6–10 ×1.2 · 11–15 ×1.4 · 16–20 ×1.6 */
+/* Tốc độ bay tăng CFG.speedStep (8%) mỗi block 5 câu toàn lượt 1–20:
+   câu 1–5 ×1.0 · 6–10 ×1.08 · 11–15 ×1.16 · 16–20 ×1.24 (chậm, dễ nhìn) */
 function speedMult(round, qIndex) {
   const g = (round - 1) * CFG.mainPerRound + qIndex; // 0–19
   return 1 + CFG.speedStep * Math.floor(g / 5);
@@ -329,7 +329,7 @@ function pickPattern() {
   return p[S.qIndex % p.length];
 }
 function entryState(pattern, i, W, H, w, h, lane, rev = false) {
-  const T = (S.round === 1 ? 3000 : 2500) / speedMult(S.round, S.qIndex);
+  const T = (S.round === 1 ? 4200 : 3600) / speedMult(S.round, S.qIndex);
   const spd = () => T * rand(0.88, 1.14) / 1000; // giây → vx/vy ra px/giây, khớp với x += vx*dt/1000
   const lanesY = [0.18, 0.5, 0.82].map((f) => f * H);
   const lanesY4 = [0.14, 0.38, 0.62, 0.86].map((f) => f * H); // vòng 1 giờ 4 đáp án

@@ -40,7 +40,7 @@ const CFG = {
   giftMainMin: 10,       // quà khi điểm chính >= 10
   maxPlays: 3,           // tối đa 3 lượt / MSSV
   focusMs: 950,          // câu hỏi hiện to giữa màn hình
-  speedStep: 0.2,        // mỗi block 5 câu tăng 20% tốc độ bay
+  speedStep: 0.08,       // mỗi block 5 câu tăng 8% tốc độ bay (chậm, dễ nhìn)
 };
 
 /* ---------- Gói cứu hộ: đủ để game không sập khi thiếu JSON ---------- */
