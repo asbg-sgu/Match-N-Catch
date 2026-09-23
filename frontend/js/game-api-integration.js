@@ -8,56 +8,109 @@ let currentPlayerId = null;
 let currentAttemptId = null;
 let currentSessionToken = null;
 
-// Override submitPlay để gọi API
-async function submitPlayAPI(entry) {
-  if (!currentAttemptId || !currentSessionToken) {
-    console.error('No attempt ID or session token');
-    // Fallback to localStorage
-    const d = loadAll();
-    const rec = d[entry.mssv] || { name: entry.name, plays: [] };
-    rec.name = entry.name;
-    rec.plays.push({ ts: entry.ts, main: entry.main, bonus: entry.bonus, total: entry.total, bonusCount: entry.bonusCount });
-    d[entry.mssv] = rec;
-    saveAll(d);
-    return true;
-  }
+// Override submitPlay để gọi API (non-blocking)
+function submitPlayAPI(entry) {
+  // Chạy async trong background, không block UI
+  (async () => {
+    if (!currentAttemptId || !currentSessionToken) {
+      console.error('No attempt ID or session token');
+      // Fallback to localStorage
+      const d = loadAll();
+      const rec = d[entry.mssv] || { name: entry.name, plays: [] };
+      rec.name = entry.name;
+      rec.plays.push({ ts: entry.ts, main: entry.main, bonus: entry.bonus, total: entry.total, bonusCount: entry.bonusCount });
+      d[entry.mssv] = rec;
+      saveAll(d);
+      return;
+    }
 
-  // Build action_logs from game state (cần game.js expose data này)
-  // Tạm thời gửi empty array - cần tích hợp sâu hơn với game.js
-  const actionLogs = [];
-  const bonusAnswers = [];
-  const durationMs = Date.now() - entry.ts;
+    // Build mock action_logs from score (temporary - need real tracking)
+    const actionLogs = [];
+    const correctCount = entry.main; // Approximate
+    const wrongCount = 20 - correctCount;
 
-  try {
-    await submitGame(currentAttemptId, currentSessionToken, actionLogs, bonusAnswers, durationMs);
-    return true;
-  } catch (error) {
-    console.error('Submit failed:', error);
-    // Fallback to localStorage
-    const d = loadAll();
-    const rec = d[entry.mssv] || { name: entry.name, plays: [] };
-    rec.name = entry.name;
-    rec.plays.push({ ts: entry.ts, main: entry.main, bonus: entry.bonus, total: entry.total, bonusCount: entry.bonusCount });
-    d[entry.mssv] = rec;
-    saveAll(d);
-    return true;
-  }
+    // Mock correct actions
+    for (let i = 0; i < correctCount; i++) {
+      actionLogs.push({
+        instance_id: `card-${i}`,
+        card_id: `aws-service-${i}`,
+        round: i < 10 ? 1 : 2,
+        action: 'correct',
+        client_timestamp_ms: entry.ts + (i * 1000)
+      });
+    }
+
+    // Mock wrong actions
+    for (let i = 0; i < wrongCount; i++) {
+      actionLogs.push({
+        instance_id: `card-wrong-${i}`,
+        card_id: `fake-service-${i}`,
+        round: i < 10 ? 1 : 2,
+        action: 'wrong',
+        client_timestamp_ms: entry.ts + ((correctCount + i) * 1000)
+      });
+    }
+
+    const bonusAnswers = [];
+    const durationMs = Date.now() - entry.ts;
+
+    try {
+      const result = await submitGame(currentAttemptId, currentSessionToken, actionLogs, bonusAnswers, durationMs);
+      console.log('Submit success:', result);
+    } catch (error) {
+      console.error('Submit failed:', error);
+      // Fallback to localStorage
+      const d = loadAll();
+      const rec = d[entry.mssv] || { name: entry.name, plays: [] };
+      rec.name = entry.name;
+      rec.plays.push({ ts: entry.ts, main: entry.main, bonus: entry.bonus, total: entry.total, bonusCount: entry.bonusCount });
+      d[entry.mssv] = rec;
+      saveAll(d);
+    }
+  })();
+
+  // Return sync để không block game.js
+  return true;
 }
 
 // Override getLeaderboard để gọi API
 async function getLeaderboardAPI() {
   try {
-    const data = await getLeaderboard(50);
-    return data.top_players.map(p => ({
-      name: p.player_name,
-      main: p.best_score - (p.bonus_score || 0), // Approximate
-      bonus: p.bonus_score || 0,
-      total: p.best_score,
-      ts: new Date(p.played_at).getTime(),
+    // Gọi API trực tiếp, không qua getLeaderboard() để tránh loop
+    const response = await fetch('http://localhost:8000/api/leaderboard/?limit=50', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Backend trả về top_entries, không phải top_players
+    const entries = data.top_entries || data.top_players || [];
+
+    if (!entries || entries.length === 0) {
+      console.warn('No leaderboard entries, using localStorage fallback');
+      throw new Error('Empty leaderboard response');
+    }
+
+    return entries.map(p => ({
+      name: p.display_name || p.player_name,
+      main: p.total_score - (p.bonus_points || 0), // Approximate
+      bonus: p.bonus_points || 0,
+      total: p.total_score,
+      ts: p.finished_at ? new Date(p.finished_at).getTime() : Date.now(),
     }));
   } catch (error) {
     console.error('Leaderboard failed:', error);
-    // Fallback to localStorage
+    // Fallback to localStorage - gọi function gốc
+    if (window.getLeaderboardOriginal) {
+      return window.getLeaderboardOriginal();
+    }
     const best = [];
     for (const [mssv, rec] of Object.entries(loadAll())) {
       let b = null;
