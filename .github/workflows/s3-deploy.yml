@@ -57,7 +57,7 @@ jobs:
             --exclude "qa/*"
           echo "✅ Frontend synced to s3://${{ secrets.S3_BUCKET_NAME }}"
 
-      # 4. Invalidate CloudFront cache sau khi deploy
+      # 5. Invalidate CloudFront cache sau khi deploy
       #    Chỉ chạy nếu secret CLOUDFRONT_DISTRIBUTION_ID đã được set
       - name: Invalidate CloudFront cache
         if: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID != '' }}
