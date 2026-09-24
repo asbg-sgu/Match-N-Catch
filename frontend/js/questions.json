@@ -13,9 +13,9 @@
           "text": "Amazon S3 thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/s3.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-s3-1", "label": "Amazon Web Service", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-s3-1", "label": "Amazon Web Service", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-s3-2", "label": "Go0gle Cloud", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "aws"
@@ -27,9 +27,9 @@
           "text": "AWS Lambda thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/lambda.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-lambda-1", "label": "Amazone Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-lambda-1", "label": "Amazone Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-lambda-2", "label": "Gooogle Cloud", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "aws"
@@ -41,9 +41,9 @@
           "text": "Amazon EC2 thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/ec2.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-ec2-1", "label": "Amazon Web Servcies", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-ec2-1", "label": "Amazon Web Servcies", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-ec2-2", "label": "Google Cloude", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "aws"
@@ -55,9 +55,9 @@
           "text": "Amazon RDS thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/rds.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-rds-1", "label": "Amazan Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-rds-1", "label": "Amazan Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-rds-2", "label": "Google Clound", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "aws"
@@ -69,9 +69,9 @@
           "text": "Amazon DynamoDB thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/dynamodb.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-dynamodb-1", "label": "Amazon Web-Service", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-dynamodb-1", "label": "Amazon Web-Service", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-dynamodb-2", "label": "Googel Cloud", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "aws"
@@ -83,9 +83,9 @@
           "text": "Amazon SQS thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/sqs.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-sqs-1", "label": "Amazon Web Service", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-sqs-1", "label": "Amazon Web Service", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-sqs-2", "label": "Gooogle Cloud", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "aws"
@@ -97,9 +97,9 @@
           "text": "Amazon Route 53 thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/route53.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-route53-1", "label": "Amazone Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-route53-1", "label": "Amazone Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-route53-2", "label": "Google Cloude", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "aws"
@@ -111,9 +111,9 @@
           "text": "Amazon EKS thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/eks.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-eks-1", "label": "Amazon Web Servcies", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-eks-1", "label": "Amazon Web Servcies", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-eks-2", "label": "Go0gle Cloud", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "aws"
@@ -125,9 +125,9 @@
           "text": "Amazon Redshift thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/redshift.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-redshift-1", "label": "Amazan Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-redshift-1", "label": "Amazan Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-redshift-2", "label": "Google Clound", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "aws"
@@ -139,9 +139,9 @@
           "text": "Amazon CloudFront thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/cloudfront.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-cloudfront-1", "label": "Amazon Web-Service", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-cloudfront-1", "label": "Amazon Web-Service", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-cloudfront-2", "label": "Googel Cloud", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "aws"
@@ -153,9 +153,9 @@
           "text": "BigQuery thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/bigquery.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-bigquery-1", "label": "Amazon Web Service", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-bigquery-1", "label": "Amazon Web Service", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-bigquery-2", "label": "Go0gle Cloud", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "gcp"
@@ -167,9 +167,9 @@
           "text": "Cloud Storage thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/storage.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-gcs-1", "label": "Amazone Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-gcs-1", "label": "Amazone Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-gcs-2", "label": "Gooogle Cloud", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "gcp"
@@ -181,9 +181,9 @@
           "text": "Cloud Run thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/run.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-run-1", "label": "Amazon Web Servcies", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-run-1", "label": "Amazon Web Servcies", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-run-2", "label": "Google Cloude", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "gcp"
@@ -195,9 +195,9 @@
           "text": "Compute Engine thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/compute.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-gce-1", "label": "Amazan Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-gce-1", "label": "Amazan Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-gce-2", "label": "Google Clound", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "gcp"
@@ -209,9 +209,9 @@
           "text": "Cloud SQL thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/sql.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-sql-1", "label": "Amazon Web-Service", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-sql-1", "label": "Amazon Web-Service", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-sql-2", "label": "Googel Cloud", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "gcp"
@@ -223,9 +223,9 @@
           "text": "Firestore thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/firestore.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-firestore-1", "label": "Amazon Web Service", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-firestore-1", "label": "Amazon Web Service", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-firestore-2", "label": "Gooogle Cloud", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "gcp"
@@ -237,9 +237,9 @@
           "text": "Pub/Sub thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/pubsub.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-pubsub-1", "label": "Amazone Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-pubsub-1", "label": "Amazone Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-pubsub-2", "label": "Google Cloude", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "gcp"
@@ -251,9 +251,9 @@
           "text": "Cloud DNS thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/dns.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-dns-1", "label": "Amazon Web Servcies", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-dns-1", "label": "Amazon Web Servcies", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-dns-2", "label": "Go0gle Cloud", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "gcp"
@@ -265,9 +265,9 @@
           "text": "Google Kubernetes Engine thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/gke.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-gke-1", "label": "Amazan Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-gke-1", "label": "Amazan Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-gke-2", "label": "Google Clound", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "gcp"
@@ -279,9 +279,9 @@
           "text": "Cloud CDN thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/cdn.svg",
           "options": [
-            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
-            { "id": "fx-r1-cdn-1", "label": "Amazon Web-Service", "icon": "assets/icons/brands/aws.svg" },
+            { "id": "fx-r1-cdn-1", "label": "Amazon Web-Service", "icon": "assets/logos/aws-dark.png" },
             { "id": "fx-r1-cdn-2", "label": "Googel Cloud", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "gcp"

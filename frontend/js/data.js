@@ -57,9 +57,9 @@ const EMBEDDED_FALLBACK = {
           text: 'Amazon S3 thuộc nhà cung cấp đám mây nào?',
           icon: ICON('aws/s3.svg'),
           options: [
-            { id: 'aws', label: 'Amazon Web Services', icon: ICON('brands/aws.svg') },
+            { id: 'aws', label: 'Amazon Web Services', icon: 'assets/logos/aws-dark.png' },
             { id: 'gcp', label: 'Google Cloud', icon: ICON('brands/gcp.svg') },
-            { id: 'fb1', label: 'Amazon Web Service', icon: ICON('brands/aws.svg') },
+            { id: 'fb1', label: 'Amazon Web Service', icon: 'assets/logos/aws-dark.png' },
             { id: 'fb2', label: 'Go0gle Cloud', icon: ICON('brands/gcp.svg') },
           ],
           correctOptionId: 'aws',
@@ -69,9 +69,9 @@ const EMBEDDED_FALLBACK = {
           text: 'Google Kubernetes Engine thuộc nhà cung cấp đám mây nào?',
           icon: ICON('gcp/gke.svg'),
           options: [
-            { id: 'aws', label: 'Amazon Web Services', icon: ICON('brands/aws.svg') },
+            { id: 'aws', label: 'Amazon Web Services', icon: 'assets/logos/aws-dark.png' },
             { id: 'gcp', label: 'Google Cloud', icon: ICON('brands/gcp.svg') },
-            { id: 'fb1', label: 'Amazone Web Services', icon: ICON('brands/aws.svg') },
+            { id: 'fb1', label: 'Amazone Web Services', icon: 'assets/logos/aws-dark.png' },
             { id: 'fb2', label: 'Google Cloude', icon: ICON('brands/gcp.svg') },
           ],
           correctOptionId: 'gcp',
