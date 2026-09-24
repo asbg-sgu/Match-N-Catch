@@ -25,10 +25,10 @@ permissions:
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-1' }}
-  ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
-  ECS_CLUSTER: ${{ vars.ECS_CLUSTER || 'match-catch-cluster' }}
-  ECS_BACKEND_SERVICE: ${{ vars.ECS_BACKEND_SERVICE || 'svc-match-catch-be' }}
-  ECS_BACKEND_TASK_DEF: ${{ vars.ECS_BACKEND_TASK_DEF || 'match-catch-task-be' }}
+  ECR_REGISTRY: ${{ secrets.ECR_REPOSITORY }}
+  ECS_CLUSTER: ${{ vars.ECS_CLUSTER || 'match-n-catch-cluster' }}
+  ECS_BACKEND_SERVICE: ${{ vars.ECS_BACKEND_SERVICE || 'match-n-catch-task-service-vr8ynju9' }}
+  ECS_BACKEND_TASK_DEF: ${{ vars.ECS_BACKEND_TASK_DEF || 'match-n-catch-task' }}
   APP_URL: ${{ vars.APP_URL }}
 
 jobs:
@@ -80,10 +80,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials (OIDC)
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Log in to Amazon ECR
@@ -104,15 +105,16 @@ jobs:
           context: ./backend
           push: true
           tags: |
-            ${{ env.ECR_REGISTRY }}/match-catch-backend:latest
-            ${{ env.ECR_REGISTRY }}/match-catch-backend:${{ steps.vars.outputs.sha_tag }}
+            ${{ env.ECR_REGISTRY }}:latest
+            ${{ env.ECR_REGISTRY }}:${{ steps.vars.outputs.sha_tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Set image output
         id: set-output
         run: |
-          echo "image=${{ env.ECR_REGISTRY }}/match-catch-backend:${{ steps.vars.outputs.sha_tag }}" >> $GITHUB_OUTPUT
+          echo "image=${{ env.ECR_REGISTRY }}:${{ steps.vars.outputs.sha_tag }}" >> $GITHUB_OUTPUT
+          echo "Image set: ${{ env.ECR_REGISTRY }}:${{ steps.vars.outputs.sha_tag }}"
 
   # ─────────────────────────────────────────────
   # Job 3: Deploy Backend lên ECS
@@ -122,31 +124,39 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment:
-      name: production
-      url: ${{ env.APP_URL }}
 
     steps:
-      - name: Configure AWS credentials (OIDC)
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Debug ECS variables
+        run: |
+          echo "TASK_DEF: ${{ env.ECS_BACKEND_TASK_DEF }}"
+          echo "CLUSTER: ${{ env.ECS_CLUSTER }}"
+          echo "SERVICE: ${{ env.ECS_BACKEND_SERVICE }}"
+          echo "REGION: ${{ env.AWS_REGION }}"
 
       - name: Download current task definition
         run: |
           aws ecs describe-task-definition \
             --task-definition ${{ env.ECS_BACKEND_TASK_DEF }} \
             --query 'taskDefinition' \
-            --output json > task-def-be.json
+            --output json > task-def-be-raw.json
+          # Strip các field không hợp lệ khi re-register task definition
+          jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy, .enableFaultInjection)' \
+            task-def-be-raw.json > task-def-be.json
 
       - name: Update task definition with new image
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-def-be.json
-          container-name: backend
-          image: ${{ needs.build-and-push.outputs.backend-image }}
+          container-name: Main
+          image: ${{ needs.build-and-push.outputs.backend-image || format('{0}:latest', secrets.ECR_REPOSITORY) }}
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
@@ -155,6 +165,7 @@ jobs:
           service: ${{ env.ECS_BACKEND_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
+          force-new-deployment: true
 
       - name: Run database migrations
         run: |
@@ -163,7 +174,7 @@ jobs:
             --task-definition ${{ env.ECS_BACKEND_TASK_DEF }} \
             --overrides '{
               "containerOverrides": [{
-                "name": "backend",
+                "name": "Main",
                 "command": ["python", "manage.py", "migrate", "--noinput"]
               }]
             }' \
@@ -214,3 +225,4 @@ jobs:
             exit 1
           fi
           echo "✅ API endpoints OK"
+
