@@ -39,7 +39,12 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 3. Sync toàn bộ frontend/ lên S3 bucket
+      # 3. Inject API URL vào index.html (thay placeholder bằng giá trị thật từ Vars)
+      - name: Inject API_BASE_URL
+        run: |
+          sed -i "s|__API_BASE_URL__|${{ vars.API_BASE_URL }}|g" ./frontend/index.html
+
+      # 4. Sync toàn bộ frontend/ lên S3 bucket
       #    --delete: xóa file cũ không còn trong repo
       #    --exclude: bỏ qua file không cần serve
       - name: Sync frontend to S3
