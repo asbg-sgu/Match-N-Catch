@@ -145,7 +145,10 @@ jobs:
           aws ecs describe-task-definition \
             --task-definition ${{ env.ECS_BACKEND_TASK_DEF }} \
             --query 'taskDefinition' \
-            --output json > task-def-be.json
+            --output json > task-def-be-raw.json
+          # Strip các field không hợp lệ khi re-register task definition
+          jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy, .enableFaultInjection)' \
+            task-def-be-raw.json > task-def-be.json
 
       - name: Update task definition with new image
         id: task-def
@@ -156,7 +159,7 @@ jobs:
           image: ${{ needs.build-and-push.outputs.backend-image || format('{0}:latest', secrets.ECR_REPOSITORY) }}
 
       - name: Deploy to Amazon ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: ${{ env.ECS_BACKEND_SERVICE }}
