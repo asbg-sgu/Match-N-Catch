@@ -28,7 +28,7 @@ mysite/
 ### 1. Tạo virtual environment
 
 ```bash
-cd mysite
+cd backend
 python -m venv .venv
 .venv\Scripts\activate  # Windows
 # source .venv/bin/activate  # Linux/Mac
