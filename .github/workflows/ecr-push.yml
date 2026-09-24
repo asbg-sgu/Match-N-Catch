@@ -155,7 +155,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-def-be.json
-          container-name: backend
+          container-name: Main
           image: ${{ needs.build-and-push.outputs.backend-image || format('{0}:latest', secrets.ECR_REPOSITORY) }}
 
       - name: Deploy to Amazon ECS
@@ -173,7 +173,7 @@ jobs:
             --task-definition ${{ env.ECS_BACKEND_TASK_DEF }} \
             --overrides '{
               "containerOverrides": [{
-                "name": "backend",
+                "name": "Main",
                 "command": ["python", "manage.py", "migrate", "--noinput"]
               }]
             }' \
