@@ -176,6 +176,14 @@ input { font-family: inherit; }
 }
 .btn-ghost:active { background: rgba(148,180,255,.08); transform: scale(.98); }
 
+/* Link dạng button (dùng cho <a href="leaderboard.html">) */
+a.btn-ghost {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  text-decoration: none; text-align: center;
+}
+a.btn-ghost:hover { background: rgba(148,180,255,.07); color: var(--text-hi); }
+.btn-leaderboard { margin-top: 10px; }
+
 .field { display: block; margin-bottom: 14px; text-align: left; }
 .field-label { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-mid); margin: 0 0 7px 4px; letter-spacing: .4px; }
 .field input {
@@ -661,7 +669,7 @@ input { font-family: inherit; }
   pointer-events: none;   /* không chắn thao tác chạm vào thẻ bay */
 }
 .co-header img { height: 26px; width: auto; opacity: .9; }
-.co-header img.tile { border-radius: 7px; }          /* logo cục xanh vuông */
+.co-header img.tile { border-radius: 0; }             /* logo cục xanh vuông */
 .co-header img.wide { height: 20px; }                  /* logo ngang (GDG) cho khỏi chiếm chỗ */
 
 /* Chừa chỗ cho dải logo trên đầu mỗi màn để không che nội dung */
