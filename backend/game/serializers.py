@@ -6,7 +6,9 @@ from .models import Player, GameAttempt, RewardClaim
 # --- Player Serializers ---
 class PlayerRegisterSerializer(serializers.Serializer):
     student_id = serializers.CharField(max_length=50, required=True)
-    display_name = serializers.CharField(max_length=100, required=True)
+    # Cho phép rỗng: frontend chỉ tra cứu lượt còn lại thì không gửi tên,
+    # tránh việc tra cứu vô tình ghi đè tên thật của người chơi.
+    display_name = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
 
 
 class PlayerResponseSerializer(serializers.ModelSerializer):
@@ -88,6 +90,8 @@ class GameSubmitResponseSerializer(serializers.Serializer):
 class LeaderboardEntrySerializer(serializers.Serializer):
     rank = serializers.IntegerField()
     display_name = serializers.CharField()
+    main_score = serializers.IntegerField()
+    bonus_points = serializers.IntegerField()
     total_score = serializers.IntegerField()
     hearts_left = serializers.IntegerField()
     duration_ms = serializers.IntegerField()

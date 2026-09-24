@@ -194,5 +194,40 @@
     "provider": "GCP",
     "category": "Developer Tools",
     "icon_path": "/src/assets/google/cloud_build/cloud_build.svg"
+  },
+  {
+    "id": "aws-eks",
+    "name": "Amazon EKS",
+    "provider": "AWS",
+    "category": "Containers",
+    "icon_path": "/src/assets/aws/Architecture-Service-Icons_07312026/Arch_Containers/64/Arch_Amazon-Elastic-Kubernetes-Service_64.svg"
+  },
+  {
+    "id": "aws-redshift",
+    "name": "Amazon Redshift",
+    "provider": "AWS",
+    "category": "Analytics",
+    "icon_path": "/src/assets/aws/Architecture-Service-Icons_07312026/Arch_Analytics/64/Arch_Amazon-Redshift_64.svg"
+  },
+  {
+    "id": "aws-apigateway",
+    "name": "Amazon API Gateway",
+    "provider": "AWS",
+    "category": "Networking",
+    "icon_path": "/src/assets/aws/Architecture-Service-Icons_07312026/Arch_Networking-Content-Delivery/64/Arch_Amazon-API-Gateway_64.svg"
+  },
+  {
+    "id": "gcp-cloud-dns",
+    "name": "Cloud DNS",
+    "provider": "GCP",
+    "category": "Networking",
+    "icon_path": "/src/assets/google/cloud_dns/cloud_dns.svg"
+  },
+  {
+    "id": "gcp-cloud-cdn",
+    "name": "Cloud CDN",
+    "provider": "GCP",
+    "category": "Networking",
+    "icon_path": "/src/assets/google/cloud_cdn/cloud_cdn.svg"
   }
 ]
