@@ -28,7 +28,7 @@ env:
   ECR_REGISTRY: ${{ secrets.ECR_REPOSITORY }}
   ECS_CLUSTER: ${{ vars.ECS_CLUSTER || 'match-catch-cluster' }}
   ECS_BACKEND_SERVICE: ${{ vars.ECS_BACKEND_SERVICE || 'svc-match-catch-be' }}
-  ECS_BACKEND_TASK_DEF: ${{ vars.ECS_BACKEND_TASK_DEF || 'match-catch-task-be' }}
+  ECS_BACKEND_TASK_DEF: ${{ vars.ECS_BACKEND_TASK_DEF || 'match-n-catch-task' }}
   APP_URL: ${{ vars.APP_URL }}
 
 jobs:
@@ -134,6 +134,13 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Debug ECS variables
+        run: |
+          echo "TASK_DEF: ${{ env.ECS_BACKEND_TASK_DEF }}"
+          echo "CLUSTER: ${{ env.ECS_CLUSTER }}"
+          echo "SERVICE: ${{ env.ECS_BACKEND_SERVICE }}"
+          echo "REGION: ${{ env.AWS_REGION }}"
 
       - name: Download current task definition
         run: |
