@@ -105,15 +105,15 @@ jobs:
           context: ./backend
           push: true
           tags: |
-            ${{ env.ECR_REGISTRY }}/match-n-catch:latest
-            ${{ env.ECR_REGISTRY }}/match-n-catch:${{ steps.vars.outputs.sha_tag }}
+            ${{ env.ECR_REGISTRY }}:latest
+            ${{ env.ECR_REGISTRY }}:${{ steps.vars.outputs.sha_tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Set image output
         id: set-output
         run: |
-          echo "image=${{ env.ECR_REGISTRY }}/match-n-catch:${{ steps.vars.outputs.sha_tag }}" >> $GITHUB_OUTPUT
+          echo "image=${{ env.ECR_REGISTRY }}:${{ steps.vars.outputs.sha_tag }}" >> $GITHUB_OUTPUT
 
   # ─────────────────────────────────────────────
   # Job 3: Deploy Backend lên ECS
