@@ -21,32 +21,15 @@ function shuffle(a) {
 }
 const HEART_SVG = '<svg viewBox="0 0 24 24"><path d="M12 21s-7.1-4.6-9.3-8.6C1.2 9.7 2.9 6 6.2 5.2 8.5 4.7 10.4 5.9 12 7.8c1.6-1.9 3.5-3.1 5.8-2.6 3.3.8 5 4.5 3.1 7.2C19.1 16.4 12 21 12 21z" fill="currentColor"/></svg>';
 
-/* ---------- lưu trữ (mock backend — thay bằng API thật sau khi có server) ---------- */
-const LS_KEY = 'batmay_plays_v1';
-function loadAll() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch (e) { return {}; } }
-function saveAll(d) { try { localStorage.setItem(LS_KEY, JSON.stringify(d)); } catch (e) {} }
-function getPlays(mssv) { const d = loadAll(); return (d[mssv] && d[mssv].plays) || []; }
-function playsLeft(mssv) { return Math.max(0, CFG.maxPlays - getPlays(mssv).length); }
-function submitPlay(entry) {
-  const d = loadAll();
-  const rec = d[entry.mssv] || { name: entry.name, plays: [] };
-  rec.name = entry.name;
-  rec.plays.push({ ts: entry.ts, main: entry.main, bonus: entry.bonus, total: entry.total, bonusCount: entry.bonusCount });
-  d[entry.mssv] = rec;
-  saveAll(d);
-  return true;
-}
-function getLeaderboard() {
-  const best = [];
-  for (const [mssv, rec] of Object.entries(loadAll())) {
-    let b = null;
-    for (const p of rec.plays) {
-      if (!b || p.total > b.total || (p.total === b.total && (p.main > b.main || (p.main === b.main && p.ts < b.ts)))) b = p;
-    }
-    if (b) best.push({ name: rec.name, main: b.main, bonus: b.bonus, total: b.total, ts: b.ts });
+/* ---------- lưu trữ (sử dụng GameConnector — hybrid API + localStorage fallback) ---------- */
+async function playsLeft(mssv) {
+  try {
+    const result = await window.GameConnector.checkPlaysLeft(mssv);
+    return result.left;
+  } catch (e) {
+    console.error('[Game] Check plays left failed:', e);
+    return 0;
   }
-  best.sort((a, b) => b.total - a.total || b.main - a.main || a.ts - b.ts);
-  return best;
 }
 
 /* ---------- state ---------- */
@@ -63,6 +46,9 @@ const S = {
   raf: null, lastTs: 0,
   lastSubmitTs: 0,
   endedByLives: false,
+  attemptId: null, sessionToken: null,
+  gameStartTime: 0,
+  actionLogs: [], bonusAnswers: [],
 };
 const TO = [];
 function st(fn, ms) { TO.push(setTimeout(fn, ms)); }
@@ -102,7 +88,7 @@ function renderHearts() {
     el.appendChild(h);
   }
 }
-function resetPlay(name, mssv) {
+async function resetPlay(name, mssv) {
   clearTO();
   stopLoop();
   S.player = { name, mssv };
@@ -112,10 +98,27 @@ function resetPlay(name, mssv) {
   S.phase = 'cover'; S.paused = false; S.resolving = false;
   S.qRemain = 0; S.pendingBonus = false; S.answers = [];
   S.arenaRect = null; S.bonusQ = null; S.endedByLives = false;
+  S.attemptId = null; S.sessionToken = null;
+  S.gameStartTime = Date.now();
+  S.actionLogs = []; S.bonusAnswers = [];
   $('#hud-score').textContent = '0';
   $('#progress').style.width = '0%';
   renderHearts();
   updateStreak();
+
+  // Bắt đầu session với backend
+  try {
+    const session = await window.GameConnector.startGameSession(mssv, name);
+    S.attemptId = session.attemptId;
+    S.sessionToken = session.sessionToken;
+    console.info('[Game] Session started:', S.attemptId);
+  } catch (e) {
+    console.error('[Game] Failed to start session:', e);
+    if (e.message.includes('hết')) {
+      alert(e.message);
+      throw e;
+    }
+  }
 }
 function breakHeartAnim() {
   const hearts = $$('#hud-lives .heart');
@@ -142,19 +145,26 @@ function setProgress() {
 
 /* ---------- luồng chính ---------- */
 function initCover() {
-  $('#start-form').addEventListener('submit', (e) => {
+  $('#start-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = $('#inp-name').value.trim();
     const mssv = $('#inp-mssv').value.trim();
     if (!name) { shakeInput($('#inp-name')); return; }
     if (!mssv) { shakeInput($('#inp-mssv')); return; }
-    if (playsLeft(mssv) <= 0) {
+
+    const left = await playsLeft(mssv);
+    if (left <= 0) {
       shakeInput($('#inp-mssv'));
       alert('Mã sinh viên này đã dùng hết ' + CFG.maxPlays + ' lượt chơi.');
       return;
     }
-    resetPlay(name, mssv);
-    showScreen('howto');
+
+    try {
+      await resetPlay(name, mssv);
+      showScreen('howto');
+    } catch (e) {
+      // Error đã được xử lý trong resetPlay
+    }
   });
   $('#inp-mssv').addEventListener('input', refreshPlayLeft);
   refreshPlayLeft();
@@ -163,11 +173,11 @@ function shakeInput(el) {
   el.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-8px)' }, { transform: 'translateX(7px)' }, { transform: 'translateX(-5px)' }, { transform: 'translateX(0)' }], { duration: 380 });
   el.focus();
 }
-function refreshPlayLeft() {
+async function refreshPlayLeft() {
   const m = $('#inp-mssv').value.trim();
   const el = $('#play-left');
   if (!m) { el.hidden = true; return; }
-  const left = playsLeft(m);
+  const left = await playsLeft(m);
   el.hidden = false;
   el.textContent = left > 0 ? 'ⓘ MSSV này còn ' + left + '/' + CFG.maxPlays + ' lượt chơi' : '⛔ MSSV này đã dùng hết ' + CFG.maxPlays + ' lượt';
 }
@@ -527,6 +537,17 @@ function renderTimer(holderId, numId, ringId, remain, total) {
 /* ---------- xử lý chạm ---------- */
 function tapAnswer(i) {
   if (S.phase !== 'play' || S.resolving || S.paused) return;
+
+  // Log action
+  const q = S.questions[S.qIndex];
+  S.actionLogs.push({
+    cardId: q.id,
+    round: S.round,
+    action: i === q.correctIdx ? 'tap_correct' : 'tap_wrong',
+    timestamp: Date.now(),
+    correct: i === q.correctIdx,
+  });
+
   resolve(i);
 }
 function resolve(tapped) {
@@ -667,6 +688,14 @@ function bonusToggle(i) {
 }
 function bonusSubmit() {
   if (!S.bonusQ || S.bonusQ.graded) return;
+
+  // Log bonus answer
+  const picked = S.bonusQ.order.filter((o, idx) => S.bonusQ.selected[idx]).map((o) => o.orig);
+  S.bonusAnswers.push({
+    questionId: S.bonusQ.q.id,
+    selectedIndices: picked,
+  });
+
   gradeBonus(false);
 }
 function gradeBonus(timeout) {
@@ -714,6 +743,14 @@ function burstAtGold(parent) {
 }
 function bonusTimeout() {
   if (!S.bonusQ || S.bonusQ.graded) return;
+
+  // Log bonus timeout
+  const picked = S.bonusQ.order.filter((o, idx) => S.bonusQ.selected[idx]).map((o) => o.orig);
+  S.bonusAnswers.push({
+    questionId: S.bonusQ.q.id,
+    selectedIndices: picked,
+  });
+
   gradeBonus(true);
 }
 function closeBonus() {
@@ -726,7 +763,7 @@ function closeBonus() {
 }
 
 /* ---------- kết thúc ---------- */
-function endPlay(died) {
+async function endPlay(died) {
   clearTO();
   stopLoop();
   S.phase = 'result';
@@ -734,13 +771,32 @@ function endPlay(died) {
   clearArena();
   $('#progress').style.width = '100%';
 
+  const durationMs = Date.now() - S.gameStartTime;
   const entry = {
-    mssv: S.player.mssv, name: S.player.name,
-    main: S.main, bonus: S.bonus, total: S.main + S.bonus,
-    bonusCount: S.bonusCount, ts: Date.now(),
+    attemptId: S.attemptId,
+    mssv: S.player.mssv,
+    name: S.player.name,
+    main: S.main,
+    bonus: S.bonus,
+    bonusCount: S.bonusCount,
+    lives: S.lives,
+    answers: S.actionLogs,
+    bonusAnswers: S.bonusAnswers,
+    durationMs: durationMs,
   };
-  S.lastSubmitTs = entry.ts;
-  submitPlay(entry);
+  S.lastSubmitTs = Date.now();
+
+  // Submit qua connector (sẽ gọi API + fallback localStorage)
+  try {
+    const result = await window.GameConnector.submitGameResult(entry);
+    console.info('[Game] Submit result:', result);
+    if (result.error) {
+      console.warn('[Game] Server submit failed, saved to localStorage only');
+    }
+  } catch (e) {
+    console.error('[Game] Failed to submit game:', e);
+  }
+
   renderResult(died);
   showScreen('result');
 }
@@ -755,7 +811,7 @@ function countUp(el, v) {
   };
   requestAnimationFrame(tick);
 }
-function renderResult(died) {
+async function renderResult(died) {
   const total = S.main + S.bonus;
   $('#result-badge').textContent = died ? '💔' : (total >= 10 ? '🏆' : '🎯');
   countUp($('#result-total'), total);
@@ -773,9 +829,9 @@ function renderResult(died) {
     gc.className = 'gift-card no';
     gc.innerHTML = '<b>Chưa đủ điều kiện nhận quà</b><p>Cần ≥ ' + CFG.giftMainMin + ' điểm chính — bạn có ' + S.main + '/20. Điểm bonus không tính vào ngưỡng quà.</p>';
   }
-  renderLeaderboard();
+  await renderLeaderboard();
 
-  const left = playsLeft(S.player.mssv);
+  const left = await playsLeft(S.player.mssv);
   $('#btn-replay').hidden = left <= 0;
   $('#result-note').textContent = left > 0
     ? 'MSSV còn ' + left + '/' + CFG.maxPlays + ' lượt chơi — bảng xếp hạng chỉ lấy lượt tốt nhất của bạn.'
@@ -783,8 +839,15 @@ function renderResult(died) {
 
   if (total >= 10) confettiBurst();
 }
-function renderLeaderboard() {
-  const lb = getLeaderboard();
+async function renderLeaderboard() {
+  let lb = [];
+  try {
+    lb = await window.GameConnector.fetchLeaderboard(10);
+  } catch (e) {
+    console.error('[Game] Failed to fetch leaderboard:', e);
+    lb = [];
+  }
+
   const myIdx = lb.findIndex((e) => e.ts === S.lastSubmitTs);
   if (myIdx >= 0) lb[myIdx].you = true;
 

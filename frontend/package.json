@@ -1,11 +1,9 @@
 {
   "name": "aws-flying-quiz",
   "version": "1.0.0",
-  "description": "Match & Catch - AWS × Google Cloud Quiz Game",
+  "description": "Minigame web chủ đề **AWS × Google Cloud** cho sự kiện CLB, chơi trên điện thoại bằng cách quét QR. Tham khảo mechanic *Flying Fruit* của Wordwall, nâng cấp thành **Flying Quiz**: câu hỏi hiện to giữa màn hình → thu nhỏ ghim lên trên → 3 đáp án bay theo pattern (ngang / dọc / chéo / đối đầu / đa hướng) → chạm đúng trong 5 giây.",
   "main": "index.js",
   "scripts": {
-    "dev": "npx http-server -p 8080 -c-1 --cors",
-    "start": "npx http-server -p 8080 -c-1 --cors",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -14,8 +12,5 @@
   "type": "commonjs",
   "dependencies": {
     "playwright-core": "^1.63.0"
-  },
-  "devDependencies": {
-    "http-server": "^14.1.1"
   }
 }
