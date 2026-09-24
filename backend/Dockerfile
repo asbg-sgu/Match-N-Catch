@@ -24,11 +24,12 @@ COPY --from=builder /install /usr/local
 COPY . .
 
 # Tạo user non-root để chạy app (bảo mật)
-RUN adduser --disabled-password --gecos "" appuser
+RUN adduser --disabled-password --gecos "" appuser && \
+    chown -R appuser:appuser /app
 USER appuser
 
 # Port Django chạy
 EXPOSE 8000
 
-# Chạy app bằng gunicorn (production) hoặc runserver (dev)
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Sử dụng Gunicorn thay vì runserver để chạy production ổn định và phản hồi health check nhanh
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "mysite.wsgi:application"]
