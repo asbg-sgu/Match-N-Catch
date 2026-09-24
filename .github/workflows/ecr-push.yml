@@ -26,7 +26,7 @@ permissions:
 env:
   AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-1' }}
   ECR_REGISTRY: ${{ secrets.ECR_REPOSITORY }}
-  ECS_CLUSTER: ${{ vars.ECS_CLUSTER || 'match-catch-cluster' }}
+  ECS_CLUSTER: ${{ vars.ECS_CLUSTER || 'match-n-catch-cluster' }}
   ECS_BACKEND_SERVICE: ${{ vars.ECS_BACKEND_SERVICE || 'svc-match-catch-be' }}
   ECS_BACKEND_TASK_DEF: ${{ vars.ECS_BACKEND_TASK_DEF || 'match-n-catch-task' }}
   APP_URL: ${{ vars.APP_URL }}
@@ -124,9 +124,6 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment:
-      name: production
-      url: ${{ env.APP_URL }}
 
     steps:
       - name: Configure AWS credentials
