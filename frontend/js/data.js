@@ -53,7 +53,7 @@ const EMBEDDED_FALLBACK = {
       id: 1, title: 'Nhận diện nhà cung cấp',
       questions: [
         {
-          id: 'fb-r1-s3', provider: 'aws',
+          id: 'fb-r1-s3', cardId: 'aws-s3', provider: 'aws',
           text: 'Amazon S3 thuộc nhà cung cấp đám mây nào?',
           icon: ICON('aws/s3.svg'),
           options: [
@@ -65,7 +65,7 @@ const EMBEDDED_FALLBACK = {
           correctOptionId: 'aws',
         },
         {
-          id: 'fb-r1-gke', provider: 'gcp',
+          id: 'fb-r1-gke', cardId: 'gcp-gke', provider: 'gcp',
           text: 'Google Kubernetes Engine thuộc nhà cung cấp đám mây nào?',
           icon: ICON('gcp/gke.svg'),
           options: [
@@ -82,7 +82,7 @@ const EMBEDDED_FALLBACK = {
       id: 2, title: 'Hiểu dịch vụ AWS',
       questions: [
         {
-          id: 'fb-r2-s3',
+          id: 'fb-r2-s3', cardId: 'aws-s3',
           text: 'Amazon S3 chủ yếu dùng để làm gì?',
           icon: ICON('aws/s3.svg'),
           options: [
@@ -93,7 +93,7 @@ const EMBEDDED_FALLBACK = {
           correctOptionId: 'a',
         },
         {
-          id: 'fb-r2-lambda',
+          id: 'fb-r2-lambda', cardId: 'aws-lambda',
           text: 'AWS Lambda dùng để làm gì?',
           icon: ICON('aws/lambda.svg'),
           options: [

@@ -85,13 +85,15 @@ async function playsLeft(mssv, name) {
         method: 'POST',
         body: { student_id: mssv, display_name: name || '' },
       });
-      return { left: Math.max(0, 3 - d.attempts_count), total: 3, canPlay: d.can_play, online: true };
+      const max = (window.CFG && CFG.maxPlays) || 3;
+      return { left: Math.max(0, max - d.attempts_count), total: max, canPlay: d.can_play, online: true };
     } catch (e) {
       console.warn('[API] playsLeft lỗi, dùng localStorage:', e.message);
     }
   }
-  const left = Math.max(0, 3 - localPlays(mssv).length);
-  return { left, total: 3, canPlay: left > 0, online: false };
+  const max = (window.CFG && CFG.maxPlays) || 3;
+  const left = Math.max(0, max - localPlays(mssv).length);
+  return { left, total: max, canPlay: left > 0, online: false };
 }
 
 /**
@@ -120,7 +122,8 @@ async function startGame(mssv, name) {
       online = false;
     }
   }
-  return { attemptId: null, sessionToken: null, attemptsLeft: 3 - localPlays(mssv).length, bonusQuestions: null, online: false };
+  const max = (window.CFG && CFG.maxPlays) || 3;
+  return { attemptId: null, sessionToken: null, attemptsLeft: max - localPlays(mssv).length, bonusQuestions: null, online: false };
 }
 
 /**

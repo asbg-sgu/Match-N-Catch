@@ -168,8 +168,11 @@ function initCover() {
       // Error đã được xử lý trong resetPlay
     }
   });
-  $('#inp-mssv').addEventListener('input', refreshPlayLeft);
-  $('#inp-name').addEventListener('input', refreshPlayLeft);
+  // Gõ tới đâu gọi BE tới đó sẽ tạo 1 người chơi mỗi ký tự → debounce 500ms
+  let hintTimer = 0;
+  const refreshSoon = () => { clearTimeout(hintTimer); hintTimer = setTimeout(refreshPlayLeft, 500); };
+  $('#inp-mssv').addEventListener('input', refreshSoon);
+  $('#inp-name').addEventListener('input', refreshSoon);
   refreshPlayLeft();
 }
 function shakeInput(el) {
@@ -264,6 +267,7 @@ function buildRoundQuestions(r) {
 }
 
 function startRound(r) {
+  if (r === 1) S.gameStartTime = Date.now();   // tính giờ chơi từ lúc vào vòng 1 (không tính màn hướng dẫn)
   S.round = r;
   S.questions = buildRoundQuestions(r);
   S.qIndex = 0;
