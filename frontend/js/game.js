@@ -21,10 +21,10 @@ function shuffle(a) {
 }
 const HEART_SVG = '<svg viewBox="0 0 24 24"><path d="M12 21s-7.1-4.6-9.3-8.6C1.2 9.7 2.9 6 6.2 5.2 8.5 4.7 10.4 5.9 12 7.8c1.6-1.9 3.5-3.1 5.8-2.6 3.3.8 5 4.5 3.1 7.2C19.1 16.4 12 21 12 21z" fill="currentColor"/></svg>';
 
-/* ---------- lưu trữ (sử dụng GameConnector — hybrid API + localStorage fallback) ---------- */
-async function playsLeft(mssv) {
+/* ---------- lưu trữ (GameAPI — backend Django chấm điểm, offline fallback localStorage) ---------- */
+async function playsLeft(mssv, name) {
   try {
-    const result = await window.GameConnector.checkPlaysLeft(mssv);
+    const result = await window.GameAPI.playsLeft(mssv, name);
     return result.left;
   } catch (e) {
     console.error('[Game] Check plays left failed:', e);
@@ -47,6 +47,7 @@ const S = {
   lastSubmitTs: 0,
   endedByLives: false,
   attemptId: null, sessionToken: null,
+  online: false, bonusQuestions: null, serverResult: null,
   gameStartTime: 0,
   actionLogs: [], bonusAnswers: [],
 };
@@ -99,6 +100,7 @@ async function resetPlay(name, mssv) {
   S.qRemain = 0; S.pendingBonus = false; S.answers = [];
   S.arenaRect = null; S.bonusQ = null; S.endedByLives = false;
   S.attemptId = null; S.sessionToken = null;
+  S.online = false; S.bonusQuestions = null; S.serverResult = null;
   S.gameStartTime = Date.now();
   S.actionLogs = []; S.bonusAnswers = [];
   $('#hud-score').textContent = '0';
@@ -106,18 +108,18 @@ async function resetPlay(name, mssv) {
   renderHearts();
   updateStreak();
 
-  // Bắt đầu session với backend
+  // Mở lượt trên BE (nhận session_token + 2 câu bonus thật của lượt này)
   try {
-    const session = await window.GameConnector.startGameSession(mssv, name);
+    const session = await window.GameAPI.startGame(mssv, name);
     S.attemptId = session.attemptId;
     S.sessionToken = session.sessionToken;
-    console.info('[Game] Session started:', S.attemptId);
+    S.online = session.online;
+    S.bonusQuestions = session.bonusQuestions;
+    console.info('[Game] Lượt chơi:', session.online ? S.attemptId : 'offline');
   } catch (e) {
     console.error('[Game] Failed to start session:', e);
-    if (e.message.includes('hết')) {
-      alert(e.message);
-      throw e;
-    }
+    alert(e.message);
+    throw e;
   }
 }
 function breakHeartAnim() {
@@ -152,7 +154,7 @@ function initCover() {
     if (!name) { shakeInput($('#inp-name')); return; }
     if (!mssv) { shakeInput($('#inp-mssv')); return; }
 
-    const left = await playsLeft(mssv);
+    const left = await playsLeft(mssv, name);
     if (left <= 0) {
       shakeInput($('#inp-mssv'));
       alert('Mã sinh viên này đã dùng hết ' + CFG.maxPlays + ' lượt chơi.');
@@ -167,6 +169,7 @@ function initCover() {
     }
   });
   $('#inp-mssv').addEventListener('input', refreshPlayLeft);
+  $('#inp-name').addEventListener('input', refreshPlayLeft);
   refreshPlayLeft();
 }
 function shakeInput(el) {
@@ -177,7 +180,7 @@ async function refreshPlayLeft() {
   const m = $('#inp-mssv').value.trim();
   const el = $('#play-left');
   if (!m) { el.hidden = true; return; }
-  const left = await playsLeft(m);
+  const left = await playsLeft(m, $('#inp-name').value.trim());
   el.hidden = false;
   el.textContent = left > 0 ? 'ⓘ MSSV này còn ' + left + '/' + CFG.maxPlays + ' lượt chơi' : '⛔ MSSV này đã dùng hết ' + CFG.maxPlays + ' lượt';
 }
@@ -224,8 +227,8 @@ function countdown(go) {
   }, 760);
   TO.push(iv);
 }
-/* Tốc độ bay tăng CFG.speedStep (8%) mỗi block 5 câu toàn lượt 1–20:
-   câu 1–5 ×1.0 · 6–10 ×1.08 · 11–15 ×1.16 · 16–20 ×1.24 (chậm, dễ nhìn) */
+/* Tốc độ bay tăng CFG.speedStep (6%) mỗi block 5 câu toàn lượt 1–20:
+   câu 1–5 ×1.0 · 6–10 ×1.06 · 11–15 ×1.12 · 16–20 ×1.18 (chậm, dễ nhìn) */
 function speedMult(round, qIndex) {
   const g = (round - 1) * CFG.mainPerRound + qIndex; // 0–19
   return 1 + CFG.speedStep * Math.floor(g / 5);
@@ -235,6 +238,7 @@ function toPlayable(q, round) {
   return {
     round,
     id: q.id,
+    cardId: q.cardId,   // thẻ tương ứng trong backend/data/cards.json (BE chấm theo card_id)
     icon: q.icon,
     text: q.text,
     timeMs: q.timeLimitMs || CFG.qTime,
@@ -339,20 +343,25 @@ function pickPattern() {
   return p[S.qIndex % p.length];
 }
 function entryState(pattern, i, W, H, w, h, lane, rev = false) {
-  const T = (S.round === 1 ? 4200 : 3600) / speedMult(S.round, S.qIndex);
-  const spd = () => T * rand(0.88, 1.14) / 1000; // giây → vx/vy ra px/giây, khớp với x += vx*dt/1000
+  const T = (S.round === 1 ? CFG.flyMsR1 : CFG.flyMsR2) / speedMult(S.round, S.qIndex);
+  const m = 30;
+  const px = W + w + 2 * m;  // quãng đường ngang đầy đủ (vào → ra khỏi màn hình)
+  const py = H + h + 2 * m;  // quãng đường dọc đầy đủ
+  const spd = () => T * rand(0.88, 1.14) / 1000; // giây để đi hết quãng ngang
+  // Tốc độ chuẩn px/s lấy theo trục ngang → mọi pattern bay cùng tốc độ cảm nhận.
+  // (Trước đây dọc/chéo tự chia theo T nên nhanh hơn hẳn: dọc ~1,3x, chéo ~1,5x.)
+  const vRef = () => px / spd();
   const lanesY = [0.18, 0.5, 0.82].map((f) => f * H);
   const lanesY4 = [0.14, 0.38, 0.62, 0.86].map((f) => f * H); // vòng 1 giờ 4 đáp án
   const lanesX = [0.24, 0.5, 0.76].map((f) => f * W);
-  const m = 30;
   switch (pattern) {
     case 'horizontal': {
       const flip = Math.random() < 0.5 ? 1 : -1;
-      return { x0: flip > 0 ? -w - m : W + m, y0: lanesY4[lane % 4] - h / 2, vx: flip * (W + w + 2 * m) / spd(), vy: 0, kind: 'h' };
+      return { x0: flip > 0 ? -w - m : W + m, y0: lanesY4[lane % 4] - h / 2, vx: flip * vRef(), vy: 0, kind: 'h' };
     }
     case 'vertical': {
       const flip = Math.random() < 0.5 ? 1 : -1;
-      return { x0: lanesX[lane % 3] - w / 2, y0: flip > 0 ? -h - m : H + m, vx: 0, vy: flip * (H + h + 2 * m) / spd(), kind: 'v' };
+      return { x0: lanesX[lane % 3] - w / 2, y0: flip > 0 ? -h - m : H + m, vx: 0, vy: flip * vRef(), kind: 'v' };
     }
     case 'diagonal': {
       const corners = [[0, 0], [1, 0], [0, 1], [1, 1]];
@@ -362,28 +371,30 @@ function entryState(pattern, i, W, H, w, h, lane, rev = false) {
       const vyS = rev ? (cy ? 1 : -1) : (cy ? -1 : 1);
       let x0 = cx ? W + m : -w - m;
       let y0 = cy ? H + m : -h - m;
-      let vx = vxS * (W + w + 2 * m) / spd();
-      let vy = vyS * (H + h + 2 * m) / spd();
+      // Hướng chéo góc-đối-góc nhưng chuẩn hoá độ lớn về vRef → không nhanh hơn ngang
+      const dx = vxS * px, dy = vyS * py;
+      const L = Math.hypot(dx, dy) || 1;
+      const v = vRef();
+      const vx = v * dx / L, vy = v * dy / L;
       // 3 đường chéo song song lệch nhau để không đụng nhau giữa màn hình
-      const len = Math.hypot(vx, vy) || 1;
       const off = (i % 3 - 1) * Math.min(W, H) * 0.22;
-      x0 += -vy / len * off; y0 += vx / len * off;
+      x0 += -vy / v * off; y0 += vx / v * off;
       return { x0, y0, vx, vy, kind: 'd' };
     }
     case 'opposite': {
       const side = i < 2 ? -1 : 1;
-      return { x0: side < 0 ? -w - m : W + m, y0: lanesY4[lane % 4] - h / 2, vx: -side * (W + w + 2 * m) / spd(), vy: 0, kind: 'h' };
+      return { x0: side < 0 ? -w - m : W + m, y0: lanesY4[lane % 4] - h / 2, vx: -side * vRef(), vy: 0, kind: 'h' };
     }
     case 'cross': {
       if (i === 0) return rev
-        ? { x0: W / 2 - w / 2, y0: H + m, vx: 0, vy: -(H + h + 2 * m) / spd(), kind: 'v' }
-        : { x0: W / 2 - w / 2, y0: -h - m, vx: 0, vy: (H + h + 2 * m) / spd(), kind: 'v' };
+        ? { x0: W / 2 - w / 2, y0: H + m, vx: 0, vy: -vRef(), kind: 'v' }
+        : { x0: W / 2 - w / 2, y0: -h - m, vx: 0, vy: vRef(), kind: 'v' };
       if (i === 1) return rev
-        ? { x0: W + m, y0: H * 0.32 - h / 2, vx: -(W + w + 2 * m) / spd(), vy: 0, kind: 'h' }
-        : { x0: -w - m, y0: H * 0.32 - h / 2, vx: (W + w + 2 * m) / spd(), vy: 0, kind: 'h' };
+        ? { x0: W + m, y0: H * 0.32 - h / 2, vx: -vRef(), vy: 0, kind: 'h' }
+        : { x0: -w - m, y0: H * 0.32 - h / 2, vx: vRef(), vy: 0, kind: 'h' };
       return rev
-        ? { x0: -w - m, y0: H * 0.7 - h / 2, vx: (W + w + 2 * m) / spd(), vy: 0, kind: 'h' }
-        : { x0: W + m, y0: H * 0.7 - h / 2, vx: -(W + w + 2 * m) / spd(), vy: 0, kind: 'h' };
+        ? { x0: -w - m, y0: H * 0.7 - h / 2, vx: vRef(), vy: 0, kind: 'h' }
+        : { x0: W + m, y0: H * 0.7 - h / 2, vx: -vRef(), vy: 0, kind: 'h' };
     }
   }
 }
@@ -537,17 +548,6 @@ function renderTimer(holderId, numId, ringId, remain, total) {
 /* ---------- xử lý chạm ---------- */
 function tapAnswer(i) {
   if (S.phase !== 'play' || S.resolving || S.paused) return;
-
-  // Log action
-  const q = S.questions[S.qIndex];
-  S.actionLogs.push({
-    cardId: q.id,
-    round: S.round,
-    action: i === q.correctIdx ? 'tap_correct' : 'tap_wrong',
-    timestamp: Date.now(),
-    correct: i === q.correctIdx,
-  });
-
   resolve(i);
 }
 function resolve(tapped) {
@@ -557,6 +557,9 @@ function resolve(tapped) {
   const correct = tapped !== null && tapped === q.correctIdx;
   const wrong = tapped !== null && !correct;
   const timeout = tapped === null;
+
+  // Nhật ký thao tác để BE chấm điểm (cardId khớp backend/data/cards.json)
+  S.actionLogs.push({ cardId: q.cardId, correct, timeout, timestamp: Date.now() });
 
   S.answers.forEach((a) => { a.mode = 'freeze'; });
 
@@ -641,12 +644,21 @@ function showBanner(text, cls) {
 }
 
 /* ---------- bonus: chọn NHIỀU đáp án, khớp tuyệt đối mới +điểm ---------- */
+/* Câu bonus lấy từ /api/game/start (BE chấm theo id + selected_indices);
+   offline thì rơi về ngân hàng trong questions.json. */
 function openBonus() {
-  const pool = S.pack.bonus.filter((b) => !S.usedBonus.includes(b.id));
-  const basic = pool.filter((b) => b.difficulty === 'basic');
-  const inter = pool.filter((b) => b.difficulty !== 'basic');
-  const group = S.bonusCount === 0 ? (basic.length ? basic : inter) : (inter.length ? inter : basic);
-  const b = pick(group.length ? group : pool);
+  let b;
+  if (S.bonusQuestions && S.bonusQuestions.length) {
+    // BE gắn bonus_1 = câu đầu, bonus_2 = câu thứ hai của lượt → hiện đúng thứ tự,
+    // không random (lệch thứ tự là mất điểm bonus dù chọn đúng).
+    b = S.bonusQuestions[Math.min(S.bonusCount, S.bonusQuestions.length - 1)];
+  } else {
+    const pool = S.pack.bonus.filter((x) => !S.usedBonus.includes(x.id));
+    const basic = pool.filter((x) => x.difficulty === 'basic');
+    const inter = pool.filter((x) => x.difficulty !== 'basic');
+    const group = S.bonusCount === 0 ? (basic.length ? basic : inter) : (inter.length ? inter : basic);
+    b = pick(group.length ? group : pool);
+  }
   S.usedBonus.push(b.id);
   S.bonusCount++;
   S.streak = 0;
@@ -662,7 +674,7 @@ function openBonus() {
   const order = shuffle(b.options.map((o, i) => ({ ...o, orig: i })));
   S.bonusQ = {
     q: b, order,
-    correctIds: [...b.correctOptionIds],
+    correctIds: [...(b.correctOptionIds || [])],
     selected: new Array(order.length).fill(false),
     remain: timeMs, timeMs, graded: false,
   };
@@ -671,7 +683,9 @@ function openBonus() {
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'bopt';
-    el.innerHTML = '<span class="tick" aria-hidden="true"></span><img src="' + o.icon + '" alt=""><span><span class="bopt-name">' + o.name + '</span><span class="bopt-tag">' + o.tag + '</span></span>';
+    const media = o.icon ? '<img src="' + o.icon + '" alt="">' : '';
+    const tag = o.tag ? '<span class="bopt-tag">' + o.tag + '</span>' : '';
+    el.innerHTML = '<span class="tick" aria-hidden="true"></span>' + media + '<span><span class="bopt-name">' + o.name + '</span>' + tag + '</span>';
     el.addEventListener('pointerdown', (ev) => { ev.preventDefault(); bonusToggle(i); });
     box.appendChild(el);
   });
@@ -704,12 +718,21 @@ function gradeBonus(timeout) {
   bq.graded = true;
   $('#bonus-submit').hidden = true;
   const opts = $$('#bonus-options .bopt');
-  const picked = bq.order.filter((o, idx) => bq.selected[idx]).map((o) => o.id).sort();
-  const want = [...bq.correctIds].sort();
-  const exact = picked.length === want.length && picked.every((id, k) => id === want[k]);
   const card = $('#screen-bonus');
   const r = $('#screen-bonus .bonus-card').getBoundingClientRect();
   const cx = r.left + r.width / 2, cy = r.top + r.height * 0.34;
+
+  // Không có bảng đáp án (offline / thiếu bonus-key.json) → không tự đoán điểm,
+  // chờ con số chính thức từ BE ở màn kết quả.
+  if (!bq.correctIds.length) {
+    fxAt(cx - 60, cy, 'ĐÃ GHI NHẬN ✓', 'gold', card);
+    st(closeBonus, 1400);
+    return;
+  }
+
+  const picked = bq.order.filter((o, idx) => bq.selected[idx]).map((o) => o.id).sort();
+  const want = [...bq.correctIds].sort();
+  const exact = picked.length === want.length && picked.every((id, k) => id === want[k]);
   if (exact) {
     S.bonus += CFG.bonusScore;
     opts.forEach((el, idx) => { el.classList.toggle('is-correct', bq.selected[idx]); el.classList.toggle('is-dim', !bq.selected[idx]); });
@@ -772,26 +795,28 @@ async function endPlay(died) {
   $('#progress').style.width = '100%';
 
   const durationMs = Date.now() - S.gameStartTime;
-  const entry = {
-    attemptId: S.attemptId,
-    mssv: S.player.mssv,
-    name: S.player.name,
-    main: S.main,
-    bonus: S.bonus,
-    bonusCount: S.bonusCount,
-    lives: S.lives,
-    answers: S.actionLogs,
-    bonusAnswers: S.bonusAnswers,
-    durationMs: durationMs,
-  };
   S.lastSubmitTs = Date.now();
 
-  // Submit qua connector (sẽ gọi API + fallback localStorage)
+  // BE chấm điểm server-side (idempotent). Offline → lưu localStorage.
   try {
-    const result = await window.GameConnector.submitGameResult(entry);
-    console.info('[Game] Submit result:', result);
-    if (result.error) {
-      console.warn('[Game] Server submit failed, saved to localStorage only');
+    const res = await window.GameAPI.submitGame({
+      attemptId: S.attemptId,
+      mssv: S.player.mssv,
+      name: S.player.name,
+      main: S.main,
+      bonus: S.bonus,
+      bonusCount: S.bonusCount,
+      answers: S.actionLogs,
+      bonusAnswers: S.bonusAnswers,
+      durationMs,
+    });
+    S.serverResult = res.server;
+    if (res.server) {
+      console.info('[Game] Điểm server:', res.server);
+      const detail = await window.GameAPI.attemptDetails(res.server.attempt_id);
+      if (detail && detail.finished_at) S.lastSubmitTs = Date.parse(detail.finished_at);
+    } else if (res.error) {
+      console.warn('[Game] Server chấm lỗi — hiển thị điểm local:', res.error);
     }
   } catch (e) {
     console.error('[Game] Failed to submit game:', e);
@@ -812,37 +837,45 @@ function countUp(el, v) {
   requestAnimationFrame(tick);
 }
 async function renderResult(died) {
-  const total = S.main + S.bonus;
+  // Điểm hiển thị lấy từ BE (server chấm); chỉ offline mới dùng số local
+  const srv = S.serverResult;
+  const main = srv ? srv.main_score : S.main;
+  const bonus = srv ? srv.bonus_points : S.bonus;
+  const total = srv ? srv.total_score : S.main + S.bonus;
+  const threshold = srv ? srv.reward_threshold : CFG.giftMainMin;
+  const eligible = srv ? srv.is_eligible_reward : (S.main + S.bonus >= CFG.giftMainMin);
+
   $('#result-badge').textContent = died ? '💔' : (total >= 10 ? '🏆' : '🎯');
   countUp($('#result-total'), total);
   $('#result-hello').textContent = died
     ? S.player.name + ' — hết mạng rồi! Lần sau bình tĩnh hơn nhé.'
     : S.player.name + ' — đã chinh phục cả 2 vòng!';
-  $('#res-main').textContent = S.main;
-  $('#res-bonus').textContent = S.bonus;
+  $('#res-main').textContent = main;
+  $('#res-bonus').textContent = bonus;
 
   const gc = $('#gift-card');
-  if (S.main >= CFG.giftMainMin) {
+  if (eligible) {
     gc.className = 'gift-card ok';
-    gc.innerHTML = '<b>🎁 ĐỦ ĐIỀU KIỆN NHẬN QUÀ</b><p>Điểm chính ' + S.main + '/20 ≥ ngưỡng ' + CFG.giftMainMin + '. Đưa màn hình này cho ban tổ chức để đối chiếu MSSV.</p>';
+    gc.innerHTML = '<b>🎁 ĐỦ ĐIỀU KIỆN NHẬN QUÀ</b><p>Tổng điểm ' + total + ' ≥ ngưỡng ' + threshold + '. Đưa màn hình này cho ban tổ chức để đối chiếu MSSV.</p>';
   } else {
     gc.className = 'gift-card no';
-    gc.innerHTML = '<b>Chưa đủ điều kiện nhận quà</b><p>Cần ≥ ' + CFG.giftMainMin + ' điểm chính — bạn có ' + S.main + '/20. Điểm bonus không tính vào ngưỡng quà.</p>';
+    gc.innerHTML = '<b>Chưa đủ điều kiện nhận quà</b><p>Cần ≥ ' + threshold + ' điểm tổng — bạn có ' + total + '.</p>';
   }
   await renderLeaderboard();
 
-  const left = await playsLeft(S.player.mssv);
+  const left = await playsLeft(S.player.mssv, S.player.name);
   $('#btn-replay').hidden = left <= 0;
-  $('#result-note').textContent = left > 0
-    ? 'MSSV còn ' + left + '/' + CFG.maxPlays + ' lượt chơi — bảng xếp hạng chỉ lấy lượt tốt nhất của bạn.'
-    : 'Đã dùng hết ' + CFG.maxPlays + ' lượt chơi của MSSV này.';
+  $('#result-note').textContent = (srv ? 'Điểm do server chấm. ' : 'Đang offline — điểm chỉ lưu trên máy. ')
+    + (left > 0
+      ? 'MSSV còn ' + left + '/' + CFG.maxPlays + ' lượt chơi — bảng xếp hạng chỉ lấy lượt tốt nhất của bạn.'
+      : 'Đã dùng hết ' + CFG.maxPlays + ' lượt chơi của MSSV này.');
 
   if (total >= 10) confettiBurst();
 }
 async function renderLeaderboard() {
   let lb = [];
   try {
-    lb = await window.GameConnector.fetchLeaderboard(10);
+    lb = await window.GameAPI.leaderboard(10);
   } catch (e) {
     console.error('[Game] Failed to fetch leaderboard:', e);
     lb = [];
@@ -936,7 +969,6 @@ function applyDebug() {
   }
   if (dbg === 'result') {
     S.endedByLives = false; S.lastSubmitTs = Date.now();
-    submitPlay({ mssv: '2212345', name: 'Minh Anh', main: S.main, bonus: S.bonus, total: 12, bonusCount: 1, ts: S.lastSubmitTs });
     renderResult(false);
     return showScreen('result');
   }
@@ -945,7 +977,11 @@ function init() {
   initAmbient();
   renderHearts();
   initCover();
-  ensurePack().then(() => applyDebug());
+  // Kiểm tra BE 1 lần rồi mới nạp pack (để playsLeft/leaderboard biết đang online)
+  window.GameAPI.health().then(() => {
+    refreshPlayLeft();
+    return ensurePack();
+  }).then(() => applyDebug());
   $('#btn-howto-ok').addEventListener('click', () => roundIntro(1));
   $('#bonus-submit').addEventListener('click', (ev) => { ev.preventDefault(); bonusSubmit(); });
   $('#btn-replay').addEventListener('click', () => {

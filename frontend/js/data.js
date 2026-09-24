@@ -37,10 +37,12 @@ const CFG = {
   streakForBonus: 5,     // chuỗi 5 đúng liên tiếp mở bonus
   maxBonus: 2,           // tối đa 2 bonus / lượt
   bonusScore: 3,         // bonus đúng hết +3, sai 1 câu +0
-  giftMainMin: 10,       // quà khi điểm chính >= 10
+  giftMainMin: 12,       // ngưỡng quà = REWARD_THRESHOLD của BE (.env), tính trên tổng điểm
   maxPlays: 3,           // tối đa 3 lượt / MSSV
   focusMs: 950,          // câu hỏi hiện to giữa màn hình
-  speedStep: 0.08,       // mỗi block 5 câu tăng 8% tốc độ bay (chậm, dễ nhìn)
+  flyMsR1: 5200,         // thời gian 1 đáp án bay hết màn hình — vòng 1 (ms, càng lớn càng chậm)
+  flyMsR2: 4500,         // thời gian bay — vòng 2
+  speedStep: 0.06,       // mỗi block 5 câu tăng 6% tốc độ bay (chậm, dễ nhìn)
 };
 
 /* ---------- Gói cứu hộ: đủ để game không sập khi thiếu JSON ---------- */

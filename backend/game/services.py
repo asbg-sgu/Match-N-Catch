@@ -80,7 +80,7 @@ def get_or_create_player(student_id: str, display_name: str) -> Tuple[Player, in
         defaults={'display_name': clean_display_name}
     )
 
-    if not created and player.display_name != clean_display_name:
+    if not created and clean_display_name and player.display_name != clean_display_name:
         player.display_name = clean_display_name
         player.save()
 
@@ -376,6 +376,8 @@ def get_leaderboard(limit: int = 10) -> Dict[str, Any]:
         top_entries.append({
             'rank': rank,
             'display_name': att.player.display_name,
+            'main_score': att.main_score,
+            'bonus_points': att.bonus_points,
             'total_score': att.total_score,
             'hearts_left': att.hearts_left,
             'duration_ms': att.duration_ms,

@@ -1,0 +1,41 @@
+{
+  "_note": "Bản sao correct_indices từ backend/data/bonus_questions.json — CHỈ dùng để FE hiện đúng/sai ngay sau khi chốt bonus. BE vẫn là nơi chấm điểm chính thức. Nếu BE đổi câu hỏi, chạy lại: python3 tools/sync-bonus-key.py",
+  "answers": {
+    "bq-s3-usage": [
+      0,
+      1
+    ],
+    "bq-ec2-features": [
+      0,
+      1
+    ],
+    "bq-lambda-concept": [
+      0,
+      1
+    ],
+    "bq-rds-engines": [
+      0,
+      1,
+      3
+    ],
+    "bq-dynamodb-traits": [
+      0,
+      1,
+      3
+    ],
+    "bq-cloudwatch-role": [
+      0,
+      1
+    ],
+    "bq-cloudfront-benefits": [
+      0,
+      1,
+      3
+    ],
+    "bq-iam-security": [
+      0,
+      1,
+      3
+    ]
+  }
+}

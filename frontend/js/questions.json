@@ -8,6 +8,7 @@
       "questions": [
         {
           "id": "r1-s3",
+          "cardId": "aws-s3",
           "provider": "aws",
           "text": "Amazon S3 thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/s3.svg",
@@ -21,6 +22,7 @@
         },
         {
           "id": "r1-lambda",
+          "cardId": "aws-lambda",
           "provider": "aws",
           "text": "AWS Lambda thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/lambda.svg",
@@ -34,6 +36,7 @@
         },
         {
           "id": "r1-ec2",
+          "cardId": "aws-ec2",
           "provider": "aws",
           "text": "Amazon EC2 thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/ec2.svg",
@@ -47,6 +50,7 @@
         },
         {
           "id": "r1-rds",
+          "cardId": "aws-rds",
           "provider": "aws",
           "text": "Amazon RDS thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/rds.svg",
@@ -60,6 +64,7 @@
         },
         {
           "id": "r1-dynamodb",
+          "cardId": "aws-dynamodb",
           "provider": "aws",
           "text": "Amazon DynamoDB thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/dynamodb.svg",
@@ -73,6 +78,7 @@
         },
         {
           "id": "r1-sqs",
+          "cardId": "aws-sqs",
           "provider": "aws",
           "text": "Amazon SQS thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/sqs.svg",
@@ -86,6 +92,7 @@
         },
         {
           "id": "r1-route53",
+          "cardId": "aws-route53",
           "provider": "aws",
           "text": "Amazon Route 53 thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/route53.svg",
@@ -99,6 +106,7 @@
         },
         {
           "id": "r1-eks",
+          "cardId": "aws-eks",
           "provider": "aws",
           "text": "Amazon EKS thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/eks.svg",
@@ -112,6 +120,7 @@
         },
         {
           "id": "r1-redshift",
+          "cardId": "aws-redshift",
           "provider": "aws",
           "text": "Amazon Redshift thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/redshift.svg",
@@ -125,6 +134,7 @@
         },
         {
           "id": "r1-cloudfront",
+          "cardId": "aws-cloudfront",
           "provider": "aws",
           "text": "Amazon CloudFront thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/aws/cloudfront.svg",
@@ -138,6 +148,7 @@
         },
         {
           "id": "r1-bigquery",
+          "cardId": "gcp-bigquery",
           "provider": "gcp",
           "text": "BigQuery thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/bigquery.svg",
@@ -151,6 +162,7 @@
         },
         {
           "id": "r1-gcs",
+          "cardId": "gcp-cloud-storage",
           "provider": "gcp",
           "text": "Cloud Storage thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/storage.svg",
@@ -164,6 +176,7 @@
         },
         {
           "id": "r1-run",
+          "cardId": "gcp-cloud-run",
           "provider": "gcp",
           "text": "Cloud Run thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/run.svg",
@@ -177,6 +190,7 @@
         },
         {
           "id": "r1-gce",
+          "cardId": "gcp-compute-engine",
           "provider": "gcp",
           "text": "Compute Engine thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/compute.svg",
@@ -190,6 +204,7 @@
         },
         {
           "id": "r1-sql",
+          "cardId": "gcp-cloud-sql",
           "provider": "gcp",
           "text": "Cloud SQL thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/sql.svg",
@@ -203,6 +218,7 @@
         },
         {
           "id": "r1-firestore",
+          "cardId": "gcp-firestore",
           "provider": "gcp",
           "text": "Firestore thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/firestore.svg",
@@ -216,6 +232,7 @@
         },
         {
           "id": "r1-pubsub",
+          "cardId": "gcp-pubsub",
           "provider": "gcp",
           "text": "Pub/Sub thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/pubsub.svg",
@@ -229,6 +246,7 @@
         },
         {
           "id": "r1-dns",
+          "cardId": "gcp-cloud-dns",
           "provider": "gcp",
           "text": "Cloud DNS thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/dns.svg",
@@ -242,6 +260,7 @@
         },
         {
           "id": "r1-gke",
+          "cardId": "gcp-gke",
           "provider": "gcp",
           "text": "Google Kubernetes Engine thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/gke.svg",
@@ -255,6 +274,7 @@
         },
         {
           "id": "r1-cdn",
+          "cardId": "gcp-cloud-cdn",
           "provider": "gcp",
           "text": "Cloud CDN thuộc nhà cung cấp đám mây nào?",
           "icon": "assets/icons/gcp/cdn.svg",
@@ -274,6 +294,7 @@
       "questions": [
         {
           "id": "r2-s3",
+          "cardId": "aws-s3",
           "text": "Amazon S3 chủ yếu dùng để làm gì?",
           "icon": "assets/icons/aws/s3.svg",
           "options": [
@@ -285,6 +306,7 @@
         },
         {
           "id": "r2-lambda",
+          "cardId": "aws-lambda",
           "text": "AWS Lambda dùng để làm gì?",
           "icon": "assets/icons/aws/lambda.svg",
           "options": [
@@ -296,6 +318,7 @@
         },
         {
           "id": "r2-ec2",
+          "cardId": "aws-ec2",
           "text": "Amazon EC2 cung cấp gì?",
           "icon": "assets/icons/aws/ec2.svg",
           "options": [
@@ -307,6 +330,7 @@
         },
         {
           "id": "r2-rds",
+          "cardId": "aws-rds",
           "text": "Amazon RDS là dịch vụ gì?",
           "icon": "assets/icons/aws/rds.svg",
           "options": [
@@ -318,6 +342,7 @@
         },
         {
           "id": "r2-dynamodb",
+          "cardId": "aws-dynamodb",
           "text": "Amazon DynamoDB là loại database nào?",
           "icon": "assets/icons/aws/dynamodb.svg",
           "options": [
@@ -329,6 +354,7 @@
         },
         {
           "id": "r2-sqs",
+          "cardId": "aws-sqs",
           "text": "Amazon SQS giúp giải quyết nhu cầu nào?",
           "icon": "assets/icons/aws/sqs.svg",
           "options": [
@@ -340,6 +366,7 @@
         },
         {
           "id": "r2-route53",
+          "cardId": "aws-route53",
           "text": "Amazon Route 53 dùng chủ yếu cho việc gì?",
           "icon": "assets/icons/aws/route53.svg",
           "options": [
@@ -351,6 +378,7 @@
         },
         {
           "id": "r2-cloudfront",
+          "cardId": "aws-cloudfront",
           "text": "Amazon CloudFront là gì?",
           "icon": "assets/icons/aws/cloudfront.svg",
           "options": [
@@ -362,6 +390,7 @@
         },
         {
           "id": "r2-eks",
+          "cardId": "aws-eks",
           "text": "Amazon EKS giúp bạn làm gì?",
           "icon": "assets/icons/aws/eks.svg",
           "options": [
@@ -373,6 +402,7 @@
         },
         {
           "id": "r2-redshift",
+          "cardId": "aws-redshift",
           "text": "Amazon Redshift dùng cho mục đích nào?",
           "icon": "assets/icons/aws/redshift.svg",
           "options": [
@@ -384,6 +414,7 @@
         },
         {
           "id": "r2-cloudwatch",
+          "cardId": "aws-cloudwatch",
           "text": "Amazon CloudWatch dùng để làm gì?",
           "icon": "assets/icons/aws/cloudwatch.svg",
           "options": [
@@ -395,6 +426,7 @@
         },
         {
           "id": "r2-apigateway",
+          "cardId": "aws-apigateway",
           "text": "Amazon API Gateway dùng để làm gì?",
           "icon": "assets/icons/aws/apigateway.svg",
           "options": [
@@ -406,6 +438,7 @@
         },
         {
           "id": "r2-sns",
+          "cardId": "aws-sns",
           "text": "Amazon SNS dùng để làm gì?",
           "icon": "assets/icons/aws/sns.svg",
           "options": [
@@ -417,6 +450,7 @@
         },
         {
           "id": "r2-vpc",
+          "cardId": "aws-vpc",
           "text": "Amazon VPC dùng để làm gì?",
           "icon": "assets/icons/aws/vpc.svg",
           "options": [
