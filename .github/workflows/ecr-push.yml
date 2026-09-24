@@ -25,7 +25,7 @@ permissions:
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-1' }}
-  ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+  ECR_REGISTRY: ${{ secrets.ECR_REPOSITORY }}
   ECS_CLUSTER: ${{ vars.ECS_CLUSTER || 'match-catch-cluster' }}
   ECS_BACKEND_SERVICE: ${{ vars.ECS_BACKEND_SERVICE || 'svc-match-catch-be' }}
   ECS_BACKEND_TASK_DEF: ${{ vars.ECS_BACKEND_TASK_DEF || 'match-catch-task-be' }}
