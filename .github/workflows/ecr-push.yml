@@ -27,7 +27,7 @@ env:
   AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-1' }}
   ECR_REGISTRY: ${{ secrets.ECR_REPOSITORY }}
   ECS_CLUSTER: ${{ vars.ECS_CLUSTER || 'match-n-catch-cluster' }}
-  ECS_BACKEND_SERVICE: ${{ vars.ECS_BACKEND_SERVICE || 'svc-match-catch-be' }}
+  ECS_BACKEND_SERVICE: ${{ vars.ECS_BACKEND_SERVICE || 'match-n-catch-task-service-vr8ynju9' }}
   ECS_BACKEND_TASK_DEF: ${{ vars.ECS_BACKEND_TASK_DEF || 'match-n-catch-task' }}
   APP_URL: ${{ vars.APP_URL }}
 
@@ -156,12 +156,13 @@ jobs:
           image: ${{ needs.build-and-push.outputs.backend-image || format('{0}:latest', secrets.ECR_REPOSITORY) }}
 
       - name: Deploy to Amazon ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: ${{ env.ECS_BACKEND_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
+          force-new-deployment: true
 
       - name: Run database migrations
         run: |
