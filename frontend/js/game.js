@@ -168,8 +168,11 @@ function initCover() {
       // Error đã được xử lý trong resetPlay
     }
   });
-  $('#inp-mssv').addEventListener('input', refreshPlayLeft);
-  $('#inp-name').addEventListener('input', refreshPlayLeft);
+  // Gõ tới đâu gọi BE tới đó sẽ tạo 1 người chơi mỗi ký tự → debounce 500ms
+  let hintTimer = 0;
+  const refreshSoon = () => { clearTimeout(hintTimer); hintTimer = setTimeout(refreshPlayLeft, 500); };
+  $('#inp-mssv').addEventListener('input', refreshSoon);
+  $('#inp-name').addEventListener('input', refreshSoon);
   refreshPlayLeft();
 }
 function shakeInput(el) {
@@ -233,8 +236,13 @@ function speedMult(round, qIndex) {
   const g = (round - 1) * CFG.mainPerRound + qIndex; // 0–19
   return 1 + CFG.speedStep * Math.floor(g / 5);
 }
-function toPlayable(q, round) {
-  const opts = shuffle(q.options.map((o) => ({ ...o })));
+function toPlayable(q, round, qIndexInRound) {
+  // 5 câu đầu vòng 1 (index 0–4): chỉ hiện 2 option thật (aws + gcp), bỏ câu nhái
+  const EASY_COUNT = 5;
+  const rawOpts = (round === 1 && qIndexInRound < EASY_COUNT)
+    ? q.options.filter((o) => o.id === 'aws' || o.id === 'gcp')
+    : q.options;
+  const opts = shuffle(rawOpts.map((o) => ({ ...o })));
   return {
     round,
     id: q.id,
@@ -258,12 +266,13 @@ function buildRoundQuestions(r) {
     ];
     const rest = shuffle(R.questions.filter((q) => !take.includes(q)));
     while (take.length < Math.min(CFG.mainPerRound, R.questions.length)) take.push(rest.pop());
-    return shuffle(take).map((q) => toPlayable(q, 1));
+    return shuffle(take).map((q, idx) => toPlayable(q, 1, idx));
   }
-  return shuffle(R.questions).slice(0, Math.min(CFG.mainPerRound, R.questions.length)).map((q) => toPlayable(q, 2));
+  return shuffle(R.questions).slice(0, Math.min(CFG.mainPerRound, R.questions.length)).map((q, idx) => toPlayable(q, 2, idx));
 }
 
 function startRound(r) {
+  if (r === 1) S.gameStartTime = Date.now();   // tính giờ chơi từ lúc vào vòng 1 (không tính màn hướng dẫn)
   S.round = r;
   S.questions = buildRoundQuestions(r);
   S.qIndex = 0;

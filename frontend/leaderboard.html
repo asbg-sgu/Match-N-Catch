@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0b1426">
+  <title>Bảng Xếp Hạng · Match &amp; Catch</title>
+  <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
+  <link rel="stylesheet" href="assets/fonts/fonts.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/leaderboard.css">
+</head>
+<body>
+
+  <!-- ===== Nền ambient (giống game) ===== -->
+  <div class="bg" aria-hidden="true">
+    <div class="bg-aurora a1"></div>
+    <div class="bg-aurora a2"></div>
+    <div class="bg-aurora a3"></div>
+    <div class="bg-grid"></div>
+    <div class="bg-icons">
+      <img src="assets/icons/aws/s3.svg"         alt="" style="--dx:12%;--dy:8%;--s:46px;--d:36s;--dl:-4s">
+      <img src="assets/icons/aws/lambda.svg"     alt="" style="--dx:-8%;--dy:22%;--s:34px;--d:44s;--dl:-20s">
+      <img src="assets/icons/gcp/bigquery.svg"   alt="" style="--dx:-14%;--dy:44%;--s:40px;--d:40s;--dl:-12s">
+      <img src="assets/icons/gcp/gke.svg"        alt="" style="--dx:-6%;--dy:68%;--s:36px;--d:38s;--dl:-8s">
+      <img src="assets/icons/aws/cloudfront.svg" alt="" style="--dx:10%;--dy:78%;--s:26px;--d:46s;--dl:-16s">
+      <img src="assets/icons/gcp/compute.svg"    alt="" style="--dx:-17%;--dy:13%;--s:38px;--d:42s;--dl:-26s">
+    </div>
+    <div class="bg-particles" id="bg-particles"></div>
+    <div class="bg-grain"></div>
+  </div>
+
+  <!-- ===== Dải logo đơn vị đồng hành ===== -->
+  <div class="co-header">
+    <img src="assets/logos/doan.png"       alt="Đoàn TNCS Hồ Chí Minh">
+    <img src="assets/logos/sgu-truong.png" alt="Trường Đại học Sài Gòn">
+    <img src="assets/logos/hoi-sinh-vien.png" alt="Hội Sinh viên Việt Nam">
+    <img src="assets/logos/khoa-cntt.png"  alt="Khoa Công nghệ Thông tin — Đại học Sài Gòn">
+    <img src="assets/logos/sgu-aws.png"    class="tile" alt="AWS Student Builder Group Saigon University">
+    <img src="assets/logos/google-sgu.png" class="wide" alt="Google Developer Group On Campus — Saigon University">
+  </div>
+
+  <!-- ===== Main ===== -->
+  <main class="lb-page">
+
+    <!-- Header -->
+    <header class="lb-header">
+      <a href="index.html" class="lb-back" aria-label="Quay về trang game">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+      </a>
+      <div class="lb-header-center">
+        <p class="lb-kicker">FLYING CLOUD QUIZ</p>
+        <h1 class="lb-title">BẢNG XẾP HẠNG</h1>
+      </div>
+      <button class="lb-refresh" id="btn-refresh" aria-label="Làm mới">
+        <svg id="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 4v6h-6"/>
+          <path d="M1 20v-6h6"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- Stats bar -->
+    <div class="lb-stats" id="lb-stats">
+      <div class="lb-stat">
+        <span class="lb-stat-val" id="stat-participants">—</span>
+        <span class="lb-stat-lbl">người tham gia</span>
+      </div>
+      <div class="lb-stat-div"></div>
+      <div class="lb-stat">
+        <span class="lb-stat-val" id="stat-top">—</span>
+        <span class="lb-stat-lbl">điểm cao nhất</span>
+      </div>
+      <div class="lb-stat-div"></div>
+      <div class="lb-stat">
+        <span class="lb-stat-val" id="stat-event">AWS × GCP</span>
+        <span class="lb-stat-lbl">thử thách</span>
+      </div>
+    </div>
+
+    <!-- Status bar (online/offline/loading) -->
+    <div class="lb-status" id="lb-status" hidden>
+      <span id="lb-status-dot" class="lb-dot"></span>
+      <span id="lb-status-text"></span>
+    </div>
+
+    <!-- Tra cứu MSSV -->
+    <div class="lb-search-wrap" id="lb-search-wrap">
+      <form class="lb-search-form" id="lb-search-form" autocomplete="off">
+        <div class="lb-search-row">
+          <input
+            id="lb-search-input"
+            class="lb-search-input"
+            type="text"
+            inputmode="numeric"
+            maxlength="10"
+            placeholder="Nhập mã sinh viên…"
+            aria-label="Tra cứu mã sinh viên"
+          >
+          <button type="submit" class="lb-search-btn" aria-label="Tìm kiếm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+          </button>
+        </div>
+      </form>
+      <!-- Kết quả tra cứu -->
+      <div class="lb-search-result" id="lb-search-result" hidden></div>
+    </div>
+
+    <!-- Loading state -->
+    <div class="lb-loading" id="lb-loading" aria-live="polite" aria-label="Đang tải bảng xếp hạng">
+      <div class="lb-spinner"></div>
+      <p>Đang tải…</p>
+    </div>
+
+    <!-- Leaderboard content -->
+    <div class="lb-content" id="lb-content" hidden>
+
+      <!-- Podium top 3 -->
+      <div class="lb-podium-wrap">
+        <h2 class="leader-title">TOP 3</h2>
+        <div class="podium" id="lb-podium"></div>
+      </div>
+
+      <!-- Danh sách đầy đủ -->
+      <div class="lb-list-wrap">
+        <h2 class="leader-title">BẢNG ĐẦY ĐỦ</h2>
+        <p class="leader-note" id="lb-note">Hiển thị lượt chơi tốt nhất của mỗi sinh viên</p>
+        <ol class="leader" id="lb-list"></ol>
+      </div>
+
+    </div>
+
+    <!-- Empty state -->
+    <div class="lb-empty" id="lb-empty" hidden>
+      <p class="lb-empty-icon">🎯</p>
+      <p class="lb-empty-msg">Chưa có dữ liệu nào.<br>Hãy là người đầu tiên chinh phục bảng xếp hạng!</p>
+      <a href="index.html" class="btn-primary lb-play-btn">CHƠI NGAY</a>
+    </div>
+
+    <!-- Footer -->
+    <footer class="lb-footer">
+      <p>ASBG SGU x GDoC SGU</p>
+    </footer>
+
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/leaderboard.js"></script>
+</body>
+</html>

@@ -176,6 +176,14 @@ input { font-family: inherit; }
 }
 .btn-ghost:active { background: rgba(148,180,255,.08); transform: scale(.98); }
 
+/* Link dạng button (dùng cho <a href="leaderboard.html">) */
+a.btn-ghost {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  text-decoration: none; text-align: center;
+}
+a.btn-ghost:hover { background: rgba(148,180,255,.07); color: var(--text-hi); }
+.btn-leaderboard { margin-top: 10px; }
+
 .field { display: block; margin-bottom: 14px; text-align: left; }
 .field-label { display: block; font-size: 12.5px; font-weight: 700; color: var(--text-mid); margin: 0 0 7px 4px; letter-spacing: .4px; }
 .field input {
@@ -648,4 +656,46 @@ input { font-family: inherit; }
   .answer.is-correct, .answer.is-wrong {
     box-shadow: 0 8px 20px rgba(2,8,20,.38) !important;
   }
+}
+
+/* ============ HEADER DẢI LOGO ĐƠN VỊ ĐỒNG HÀNH ============ */
+.co-header {
+  position: fixed; left: 50%; top: 0; transform: translateX(-50%);
+  z-index: 80; width: min(100%, 430px);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: calc(7px + env(safe-area-inset-top)) 12px 7px;
+  background: linear-gradient(180deg, rgba(11,20,38,.94) 0%, rgba(11,20,38,.78) 55%, rgba(11,20,38,0) 100%);
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+  pointer-events: none;   /* không chắn thao tác chạm vào thẻ bay */
+}
+.co-header img { height: 26px; width: auto; opacity: .9; }
+.co-header img.tile { border-radius: 0; }             /* logo cục xanh vuông */
+.co-header img.wide { height: 20px; }                  /* logo ngang (GDG) cho khỏi chiếm chỗ */
+
+/* Chừa chỗ cho dải logo trên đầu mỗi màn để không che nội dung */
+.screen { padding-top: calc(max(18px, env(safe-area-inset-top)) + 48px); }
+#screen-cover { padding-top: calc(max(28px, env(safe-area-inset-top)) + 48px); }
+.hud { padding-top: calc(max(12px, env(safe-area-inset-top)) + 48px); }
+#screen-bonus { padding-top: calc(18px + 48px); }
+
+/* Màn thấp (iPhone SE…): thu gọn để dải logo + nội dung vẫn vừa màn hình */
+@media (max-height: 700px) {
+  /* card bonus: để nút CHỐT không bị che */
+  #screen-bonus .bonus-card { padding: 12px 14px 12px; }
+  .bonus-toast { display: none; }
+  .bonus-q { font-size: 14.5px; margin-bottom: 8px; }
+  .bonus-hint { margin-bottom: 8px; }
+  .bonus-options { gap: 8px; }
+  .bopt { padding: 8px 12px; }
+  .bopt .bopt-name { font-size: 13.5px; }
+  .bonus-note { display: none; }
+  /* màn chào: thu gọn để dòng chân trang không bị đẩy khỏi màn hình */
+  .screen { padding-top: calc(max(14px, env(safe-area-inset-top)) + 42px); }
+  #screen-cover { padding-top: calc(max(16px, env(safe-area-inset-top)) + 42px); }
+  .co-header img { height: 22px; }
+  .co-header img.wide { height: 17px; }
+  .brand { margin: 6px 0 10px; }
+  .brand-title { font-size: clamp(30px, 9.5vw, 38px); }
+  .chips { margin-bottom: 12px; }
+  .cover-inner .card { padding: 14px 14px 12px; }
 }

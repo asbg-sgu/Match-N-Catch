@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#0b1426">
-  <title>BẮT MÂY · Flying Cloud Quiz — AWS</title>
+  <title>Match &amp; Catch · Flying Cloud Quiz — AWS × Google Cloud</title>
   <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
   <link rel="stylesheet" href="assets/fonts/fonts.css">
   <link rel="stylesheet" href="css/style.css">
@@ -24,6 +24,12 @@
       <img src="assets/icons/aws/rds.svg" alt="" style="--dx:16%;--dy:58%;--s:30px;--d:48s;--dl:-24s">
       <img src="assets/icons/gcp/gke.svg" alt="" style="--dx:-6%;--dy:68%;--s:36px;--d:38s;--dl:-8s">
       <img src="assets/icons/aws/cloudfront.svg" alt="" style="--dx:10%;--dy:78%;--s:26px;--d:46s;--dl:-16s">
+      <img src="assets/icons/gcp/compute.svg" alt="" style="--dx:-17%;--dy:13%;--s:38px;--d:42s;--dl:-26s">
+      <img src="assets/icons/gcp/storage.svg" alt="" style="--dx:18%;--dy:26%;--s:32px;--d:50s;--dl:-6s">
+      <img src="assets/icons/gcp/pubsub.svg" alt="" style="--dx:-11%;--dy:36%;--s:26px;--d:39s;--dl:-18s">
+      <img src="assets/icons/gcp/run.svg" alt="" style="--dx:13%;--dy:49%;--s:34px;--d:47s;--dl:-34s">
+      <img src="assets/icons/gcp/sql.svg" alt="" style="--dx:-18%;--dy:61%;--s:30px;--d:43s;--dl:-10s">
+      <img src="assets/icons/gcp/firestore.svg" alt="" style="--dx:7%;--dy:88%;--s:28px;--d:41s;--dl:-28s">
     </div>
     <div class="bg-particles" id="bg-particles"></div>
     <div class="bg-grain"></div>
@@ -34,12 +40,9 @@
     <section id="screen-cover" class="screen active">
       <div class="cover-inner">
         <div class="brand">
-          <div class="brand-badge">
-            <img src="assets/icons/brands/aws.svg" alt="AWS">
-          </div>
           <p class="brand-kicker">FLYING CLOUD QUIZ</p>
-          <h1 class="brand-title">BẮT MÂY</h1>
-          <p class="brand-sub">Match &amp; Catch · AWS × Google Cloud</p>
+          <h1 class="brand-title">MATCH &amp; CATCH</h1>
+          <p class="brand-sub">Amazon Web Services × Google</p>
         </div>
         <div class="chips">
           <span class="chip">⚡ 2 vòng × 10 câu</span>
@@ -58,9 +61,13 @@
           </label>
           <p class="play-left" id="play-left" hidden></p>
           <button id="btn-start" type="submit" class="btn-primary">BẮT ĐẦU CHƠI</button>
-          <p class="cover-note">Quét QR rồi chơi ngay trên điện thoại · không cần đăng ký tài khoản</p>
+          <a href="leaderboard.html" class="btn-ghost btn-leaderboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            Xem bảng xếp hạng
+          </a>
+          <p class="cover-note">Không cần đăng ký tài khoản</p>
         </form>
-        <p class="cover-foot">Match &amp; Catch MVP · Sự kiện CLB Cloud</p>
+        <p class="cover-foot">ASBG SGU x GDoC SGU</p>
       </div>
     </section>
 
@@ -187,6 +194,19 @@
 
   <canvas id="confetti"></canvas>
 
+  <!-- ===== Dải logo đơn vị đồng hành (nhỏ, hiện xuyên suốt mọi màn hình) ===== -->
+  <div class="co-header">
+    <img src="assets/logos/doan.png" alt="Đoàn TNCS Hồ Chí Minh">
+    <img src="assets/logos/sgu-truong.png" alt="Trường Đại học Sài Gòn">
+    <img src="assets/logos/hoi-sinh-vien.png" alt="Hội Sinh viên Việt Nam">
+    <img src="assets/logos/khoa-cntt.png" alt="Khoa Công nghệ Thông tin — Đại học Sài Gòn">
+    <img src="assets/logos/sgu-aws.png" class="tile" alt="AWS Study Group — Đại học Sài Gòn">
+    <img src="assets/logos/google-sgu.png" class="wide" alt="Google Developer Group On Campus — Saigon University">
+  </div>
+
+  <script>
+    window.API_BASE_URL = '__API_BASE_URL__';
+  </script>
   <script src="js/data.js"></script>
   <script src="js/api.js"></script>
   <script src="js/game.js"></script>
