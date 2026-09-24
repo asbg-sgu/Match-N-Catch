@@ -1,44 +1,216 @@
-name: Build & Push to ECR
+# =============================================================================
+# CI/CD Pipeline — Backend only
+# Trigger: push vào main khi có thay đổi backend/**
+# Steps: Lint → Build & Push ECR → Deploy ECS → Smoke Test
+# =============================================================================
+
+name: Backend CI/CD — ECR → ECS
 
 on:
   push:
     branches:
-      - main        # đổi thành tên nhánh chính của nhóm nếu khác
+      - main
     paths:
-      - 'backend/**'                          # chỉ chạy khi có thay đổi trong backend
+      - 'backend/**'
       - '.github/workflows/ecr-push.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-1' }}
+  ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+  ECS_CLUSTER: ${{ vars.ECS_CLUSTER || 'match-catch-cluster' }}
+  ECS_BACKEND_SERVICE: ${{ vars.ECS_BACKEND_SERVICE || 'svc-match-catch-be' }}
+  ECS_BACKEND_TASK_DEF: ${{ vars.ECS_BACKEND_TASK_DEF || 'match-catch-task-be' }}
+  APP_URL: ${{ vars.APP_URL }}
 
 jobs:
-  build-and-push:
+  # ─────────────────────────────────────────────
+  # Job 1: Backend Lint
+  # ─────────────────────────────────────────────
+  backend-lint:
+    name: Backend Lint
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout code
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Cấu hình AWS credentials
-      - name: Configure AWS credentials
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'backend/requirements.txt'
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8
+
+      - name: Lint with flake8
+        working-directory: ./backend
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
+
+  # ─────────────────────────────────────────────
+  # Job 2: Build & Push Backend Image lên ECR
+  # Chỉ chạy khi push vào main + lint pass
+  # ─────────────────────────────────────────────
+  build-and-push:
+    name: Build & Push Backend Image
+    needs: [backend-lint]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    outputs:
+      backend-image: ${{ steps.set-output.outputs.image }}
+      image-tag: ${{ steps.vars.outputs.sha_tag }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      # 3. Login vào ECR
-      - name: Login to Amazon ECR
+      - name: Log in to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # 4. Build và Push image lên ECR
-      - name: Build and push image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-          IMAGE_TAG: ${{ github.sha }}         # tag theo commit hash, không dùng latest
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Get short git SHA
+        id: vars
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./backend
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          echo "Image pushed: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          echo "sha_tag=sha-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Build & Push Backend Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/match-catch-backend:latest
+            ${{ env.ECR_REGISTRY }}/match-catch-backend:${{ steps.vars.outputs.sha_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Set image output
+        id: set-output
+        run: |
+          echo "image=${{ env.ECR_REGISTRY }}/match-catch-backend:${{ steps.vars.outputs.sha_tag }}" >> $GITHUB_OUTPUT
+
+  # ─────────────────────────────────────────────
+  # Job 3: Deploy Backend lên ECS
+  # ─────────────────────────────────────────────
+  deploy-backend:
+    name: Deploy Backend to ECS
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: ${{ env.APP_URL }}
+
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download current task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.ECS_BACKEND_TASK_DEF }} \
+            --query 'taskDefinition' \
+            --output json > task-def-be.json
+
+      - name: Update task definition with new image
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-def-be.json
+          container-name: backend
+          image: ${{ needs.build-and-push.outputs.backend-image }}
+
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_BACKEND_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Run database migrations
+        run: |
+          aws ecs run-task \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --task-definition ${{ env.ECS_BACKEND_TASK_DEF }} \
+            --overrides '{
+              "containerOverrides": [{
+                "name": "backend",
+                "command": ["python", "manage.py", "migrate", "--noinput"]
+              }]
+            }' \
+            --launch-type FARGATE \
+            --network-configuration '{
+              "awsvpcConfiguration": {
+                "subnets": ${{ secrets.ECS_SUBNETS }},
+                "securityGroups": ${{ secrets.ECS_SECURITY_GROUPS }},
+                "assignPublicIp": "ENABLED"
+              }
+            }'
+
+  # ─────────────────────────────────────────────
+  # Job 4: Smoke Tests
+  # ─────────────────────────────────────────────
+  smoke-tests:
+    name: Post-Deploy Smoke Tests
+    needs: deploy-backend
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Wait for service to stabilize
+        run: sleep 15
+
+      - name: Health check - Backend /health/
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 ${{ env.APP_URL }}/health/)
+          echo "/health/ responded: $STATUS"
+          if [ "$STATUS" -ge 500 ]; then
+            echo "❌ Backend health check failed!"
+            exit 1
+          fi
+          echo "✅ Backend is healthy"
+
+      - name: Health check - API endpoints
+        run: |
+          # Chỉ test GET endpoints có trong urls.py
+          ENDPOINTS=("/api/leaderboard/")
+          FAILED=0
+          for ep in "${ENDPOINTS[@]}"; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${{ env.APP_URL }}${ep}")
+            echo "  ${ep} → ${STATUS}"
+            if [ "$STATUS" -ge 500 ]; then FAILED=1; fi
+          done
+          if [ "$FAILED" -eq 1 ]; then
+            echo "❌ API endpoint failing!"
+            exit 1
+          fi
+          echo "✅ API endpoints OK"

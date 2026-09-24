@@ -1,0 +1,63 @@
+# =============================================================================
+# CI/CD Pipeline — Frontend only
+# Trigger: push vào main khi có thay đổi frontend/**
+# Steps: Sync S3 → Invalidate CloudFront
+# Kiến trúc: User → Route53 → S3 StaticWeb (HTML/JS/CSS)
+# =============================================================================
+
+name: Frontend Deploy — S3 Static Website
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/s3-deploy.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-1' }}
+
+jobs:
+  deploy-frontend:
+    name: Deploy Frontend to S3
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Cấu hình AWS credentials (OIDC — dùng chung IAM Role với backend)
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 3. Sync toàn bộ frontend/ lên S3 bucket
+      #    --delete: xóa file cũ không còn trong repo
+      #    --exclude: bỏ qua file không cần serve
+      - name: Sync frontend to S3
+        run: |
+          aws s3 sync ./frontend s3://${{ secrets.S3_BUCKET_NAME }} \
+            --delete \
+            --exclude ".gitignore" \
+            --exclude "package.json" \
+            --exclude "README.md" \
+            --exclude "qa/*"
+          echo "✅ Frontend synced to s3://${{ secrets.S3_BUCKET_NAME }}"
+
+      # 4. Invalidate CloudFront cache sau khi deploy
+      #    Chỉ chạy nếu secret CLOUDFRONT_DISTRIBUTION_ID đã được set
+      - name: Invalidate CloudFront cache
+        if: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID != '' }}
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
+          echo "✅ CloudFront cache invalidated"
