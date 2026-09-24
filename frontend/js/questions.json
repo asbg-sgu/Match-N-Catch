@@ -16,7 +16,7 @@
             { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
             { "id": "fx-r1-s3-1", "label": "Amazon Web Service", "icon": "assets/logos/aws-dark.png" },
-            { "id": "fx-r1-s3-2", "label": "Go0gle Cloud", "icon": "assets/icons/brands/gcp.svg" }
+            { "id": "fx-r1-s3-2", "label": "Go0glee Cloud", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "aws"
         },
@@ -114,7 +114,7 @@
             { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
             { "id": "fx-r1-eks-1", "label": "Amazon Web Servcies", "icon": "assets/logos/aws-dark.png" },
-            { "id": "fx-r1-eks-2", "label": "Go0gle Cloud", "icon": "assets/icons/brands/gcp.svg" }
+            { "id": "fx-r1-eks-2", "label": "Go0glee Cloud", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "aws"
         },
@@ -156,7 +156,7 @@
             { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
             { "id": "fx-r1-bigquery-1", "label": "Amazon Web Service", "icon": "assets/logos/aws-dark.png" },
-            { "id": "fx-r1-bigquery-2", "label": "Go0gle Cloud", "icon": "assets/icons/brands/gcp.svg" }
+            { "id": "fx-r1-bigquery-2", "label": "Go0glee Cloud", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "gcp"
         },
@@ -254,7 +254,7 @@
             { "id": "aws", "label": "Amazon Web Services", "icon": "assets/logos/aws-dark.png" },
             { "id": "gcp", "label": "Google Cloud", "icon": "assets/icons/brands/gcp.svg" },
             { "id": "fx-r1-dns-1", "label": "Amazon Web Servcies", "icon": "assets/logos/aws-dark.png" },
-            { "id": "fx-r1-dns-2", "label": "Go0gle Cloud", "icon": "assets/icons/brands/gcp.svg" }
+            { "id": "fx-r1-dns-2", "label": "Go0glee Cloud", "icon": "assets/icons/brands/gcp.svg" }
           ],
           "correctOptionId": "gcp"
         },
