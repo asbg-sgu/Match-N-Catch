@@ -19,6 +19,8 @@ on:
     paths:
       - 'backend/**'
 
+  workflow_dispatch:
+
 permissions:
   id-token: write
   contents: read
@@ -71,7 +73,7 @@ jobs:
     name: Build & Push Backend Image
     needs: [backend-lint]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     outputs:
       backend-image: ${{ steps.set-output.outputs.image }}
       image-tag: ${{ steps.vars.outputs.sha_tag }}
@@ -123,7 +125,7 @@ jobs:
     name: Deploy Backend to ECS
     needs: build-and-push
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Configure AWS credentials
@@ -169,6 +171,12 @@ jobs:
 
       - name: Run database migrations
         run: |
+          NETWORK_CONFIGURATION=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_BACKEND_SERVICE }} \
+            --query 'services[0].networkConfiguration' \
+            --output json)
+
           aws ecs run-task \
             --cluster ${{ env.ECS_CLUSTER }} \
             --task-definition ${{ env.ECS_BACKEND_TASK_DEF }} \
@@ -179,13 +187,7 @@ jobs:
               }]
             }' \
             --launch-type FARGATE \
-            --network-configuration '{
-              "awsvpcConfiguration": {
-                "subnets": ${{ secrets.ECS_SUBNETS }},
-                "securityGroups": ${{ secrets.ECS_SECURITY_GROUPS }},
-                "assignPublicIp": "ENABLED"
-              }
-            }'
+            --network-configuration "$NETWORK_CONFIGURATION"
 
   # ─────────────────────────────────────────────
   # Job 4: Smoke Tests
@@ -194,7 +196,7 @@ jobs:
     name: Post-Deploy Smoke Tests
     needs: deploy-backend
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Wait for service to stabilize
@@ -225,4 +227,3 @@ jobs:
             exit 1
           fi
           echo "✅ API endpoints OK"
-
