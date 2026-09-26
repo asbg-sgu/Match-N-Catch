@@ -21,7 +21,7 @@
 'use strict';
 
 const API_BASE = (new URLSearchParams(location.search).get('api'))
-  || window.API_BASE_URL
+  || (/^__/.test(window.API_BASE_URL || '') ? '' : window.API_BASE_URL) // placeholder chưa được CI thay → bỏ qua
   || 'http://localhost:8000';
 
 const API_TIMEOUT = 12000;
@@ -31,6 +31,13 @@ let session = null;      // { token, attemptId }
 let online = false;
 
 /* ---------- HTTP ---------- */
+// AbortSignal.timeout chỉ có từ iOS Safari 16 — máy cũ tự dựng bằng AbortController
+function timeoutSignal(ms) {
+  if (AbortSignal.timeout) return AbortSignal.timeout(ms);
+  const c = new AbortController();
+  setTimeout(() => c.abort(), ms);
+  return c.signal;
+}
 async function request(path, { method = 'GET', body, token } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = 'Bearer ' + token;
@@ -39,7 +46,7 @@ async function request(path, { method = 'GET', body, token } = {}) {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
-    signal: AbortSignal.timeout(API_TIMEOUT),
+    signal: timeoutSignal(API_TIMEOUT),
   });
 
   const data = await res.json().catch(() => ({}));
