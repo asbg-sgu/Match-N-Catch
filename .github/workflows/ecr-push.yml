@@ -1,24 +1,11 @@
-# =============================================================================
-# CI/CD Pipeline — Backend only
-# Trigger: push vào main khi có thay đổi backend/**
-# Steps: Lint → Build & Push ECR → Deploy ECS → Smoke Test
-# =============================================================================
-
-name: Backend CI/CD — ECR → ECS
+name: Backend CI/CD — GitHub OIDC → ECR → ECS
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - 'backend/**'
       - '.github/workflows/ecr-push.yml'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'backend/**'
-
   workflow_dispatch:
 
 permissions:
@@ -26,204 +13,91 @@ permissions:
   contents: read
 
 env:
-  AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-1' }}
-  ECR_REGISTRY: ${{ secrets.ECR_REPOSITORY }}
-  ECS_CLUSTER: ${{ vars.ECS_CLUSTER || 'match-n-catch-cluster' }}
-  ECS_BACKEND_SERVICE: ${{ vars.ECS_BACKEND_SERVICE || 'match-n-catch-task-service-vr8ynju9' }}
-  ECS_BACKEND_TASK_DEF: ${{ vars.ECS_BACKEND_TASK_DEF || 'match-n-catch-task' }}
-  APP_URL: ${{ vars.APP_URL }}
+  AWS_REGION: ap-southeast-1
+  PROJECT_NAME: match-n-catch
 
 jobs:
-  # ─────────────────────────────────────────────
-  # Job 1: Backend Lint
-  # ─────────────────────────────────────────────
-  backend-lint:
-    name: Backend Lint
+  lint:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: 'backend/requirements.txt'
-
-      - name: Install dependencies
-        working-directory: ./backend
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Lint backend
+        working-directory: backend
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install flake8
-
-      - name: Lint with flake8
-        working-directory: ./backend
-        run: |
+          pip install -r requirements.txt flake8
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
 
-  # ─────────────────────────────────────────────
-  # Job 2: Build & Push Backend Image lên ECR
-  # Chỉ chạy khi push vào main + lint pass
-  # ─────────────────────────────────────────────
-  build-and-push:
-    name: Build & Push Backend Image
-    needs: [backend-lint]
+  build-and-deploy:
+    needs: lint
     runs-on: ubuntu-latest
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
-    outputs:
-      backend-image: ${{ steps.set-output.outputs.image }}
-      image-tag: ${{ steps.vars.outputs.sha_tag }}
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
+      - uses: actions/checkout@v4
+      - name: Configure AWS credentials through GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/match-n-catch-github-actions
           aws-region: ${{ env.AWS_REGION }}
-
-      - name: Log in to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Get short git SHA
-        id: vars
+          role-session-name: match-n-catch-github
+      - name: Read CloudFormation outputs
         run: |
-          echo "sha_tag=sha-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
-      - name: Build & Push Backend Image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend
-          push: true
-          tags: |
-            ${{ env.ECR_REGISTRY }}:latest
-            ${{ env.ECR_REGISTRY }}:${{ steps.vars.outputs.sha_tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Set image output
-        id: set-output
+          output() {
+            aws cloudformation describe-stacks --stack-name "$1" \
+              --query "Stacks[0].Outputs[?OutputKey=='$2'].OutputValue | [0]" --output text
+          }
+          echo "ECR_REPOSITORY=$(output ${PROJECT_NAME}-registry BackendRepositoryUri)" >> "$GITHUB_ENV"
+          echo "ECS_CLUSTER=$(output ${PROJECT_NAME}-application EcsClusterName)" >> "$GITHUB_ENV"
+          echo "ECS_SERVICE=$(output ${PROJECT_NAME}-application EcsServiceName)" >> "$GITHUB_ENV"
+          echo "TASK_DEFINITION=$(output ${PROJECT_NAME}-application TaskDefinitionArn)" >> "$GITHUB_ENV"
+      - uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and push backend image
+        id: image
         run: |
-          echo "image=${{ env.ECR_REGISTRY }}:${{ steps.vars.outputs.sha_tag }}" >> $GITHUB_OUTPUT
-          echo "Image set: ${{ env.ECR_REGISTRY }}:${{ steps.vars.outputs.sha_tag }}"
-
-  # ─────────────────────────────────────────────
-  # Job 3: Deploy Backend lên ECS
-  # ─────────────────────────────────────────────
-  deploy-backend:
-    name: Deploy Backend to ECS
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
-
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Debug ECS variables
-        run: |
-          echo "TASK_DEF: ${{ env.ECS_BACKEND_TASK_DEF }}"
-          echo "CLUSTER: ${{ env.ECS_CLUSTER }}"
-          echo "SERVICE: ${{ env.ECS_BACKEND_SERVICE }}"
-          echo "REGION: ${{ env.AWS_REGION }}"
-
+          tag="sha-${GITHUB_SHA::7}"
+          docker buildx build --platform linux/amd64 --push \
+            --tag "${ECR_REPOSITORY}:latest" \
+            --tag "${ECR_REPOSITORY}:${tag}" backend
+          echo "uri=${ECR_REPOSITORY}:${tag}" >> "$GITHUB_OUTPUT"
       - name: Download current task definition
         run: |
-          aws ecs describe-task-definition \
-            --task-definition ${{ env.ECS_BACKEND_TASK_DEF }} \
-            --query 'taskDefinition' \
-            --output json > task-def-be-raw.json
-          # Strip các field không hợp lệ khi re-register task definition
+          aws ecs describe-task-definition --task-definition "$TASK_DEFINITION" \
+            --query taskDefinition --output json > task-definition.raw.json
           jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy, .enableFaultInjection)' \
-            task-def-be-raw.json > task-def-be.json
-
-      - name: Update task definition with new image
-        id: task-def
+            task-definition.raw.json > task-definition.json
+      - name: Render task definition with immutable image
+        id: render
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: task-def-be.json
+          task-definition: task-definition.json
           container-name: Main
-          image: ${{ needs.build-and-push.outputs.backend-image || format('{0}:latest', secrets.ECR_REPOSITORY) }}
-
-      - name: Deploy to Amazon ECS
+          image: ${{ steps.image.outputs.uri }}
+      - name: Deploy task definition to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ env.ECS_BACKEND_SERVICE }}
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
           force-new-deployment: true
-
-      - name: Run database migrations
+      - name: Run database migrations with the deployed task definition
         run: |
-          NETWORK_CONFIGURATION=$(aws ecs describe-services \
-            --cluster ${{ env.ECS_CLUSTER }} \
-            --services ${{ env.ECS_BACKEND_SERVICE }} \
-            --query 'services[0].networkConfiguration' \
-            --output json)
-
-          aws ecs run-task \
-            --cluster ${{ env.ECS_CLUSTER }} \
-            --task-definition ${{ env.ECS_BACKEND_TASK_DEF }} \
-            --overrides '{
-              "containerOverrides": [{
-                "name": "Main",
-                "command": ["python", "manage.py", "migrate", "--noinput"]
-              }]
-            }' \
-            --launch-type FARGATE \
-            --network-configuration "$NETWORK_CONFIGURATION"
-
-  # ─────────────────────────────────────────────
-  # Job 4: Smoke Tests
-  # ─────────────────────────────────────────────
-  smoke-tests:
-    name: Post-Deploy Smoke Tests
-    needs: deploy-backend
-    runs-on: ubuntu-latest
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
-
-    steps:
-      - name: Wait for service to stabilize
-        run: sleep 15
-
-      - name: Health check - Backend /health/
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 ${{ env.APP_URL }}/health/)
-          echo "/health/ responded: $STATUS"
-          if [ "$STATUS" -ge 500 ]; then
-            echo "❌ Backend health check failed!"
-            exit 1
-          fi
-          echo "✅ Backend is healthy"
-
-      - name: Health check - API endpoints
-        run: |
-          # Chỉ test GET endpoints có trong urls.py
-          ENDPOINTS=("/api/leaderboard/")
-          FAILED=0
-          for ep in "${ENDPOINTS[@]}"; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${{ env.APP_URL }}${ep}")
-            echo "  ${ep} → ${STATUS}"
-            if [ "$STATUS" -ge 500 ]; then FAILED=1; fi
-          done
-          if [ "$FAILED" -eq 1 ]; then
-            echo "❌ API endpoint failing!"
-            exit 1
-          fi
-          echo "✅ API endpoints OK"
+          network_configuration=$(aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" \
+            --query 'services[0].networkConfiguration' --output json)
+          task_definition=$(aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" \
+            --query 'services[0].taskDefinition' --output text)
+          task_arn=$(aws ecs run-task --cluster "$ECS_CLUSTER" --task-definition "$task_definition" \
+            --launch-type FARGATE --network-configuration "$network_configuration" \
+            --overrides '{"containerOverrides":[{"name":"Main","command":["python","manage.py","migrate","--noinput"]}]}' \
+            --tags key=asbg,value=sguday --query 'tasks[0].taskArn' --output text)
+          test -n "$task_arn" && test "$task_arn" != "None"
+          aws ecs wait tasks-stopped --cluster "$ECS_CLUSTER" --tasks "$task_arn"
+          exit_code=$(aws ecs describe-tasks --cluster "$ECS_CLUSTER" --tasks "$task_arn" \
+            --query 'tasks[0].containers[?name==`Main`].exitCode | [0]' --output text)
+          test "$exit_code" = 0

@@ -1,0 +1,95 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Match N Catch network controls in the existing RDS VPC.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: match-n-catch
+    AllowedPattern: '^[a-z][a-z0-9-]{2,30}$'
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  PublicSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+  RdsSecurityGroupIds:
+    Type: CommaDelimitedList
+  ContainerPort:
+    Type: Number
+    Default: 8000
+    MinValue: 1
+    MaxValue: 65535
+  RdsPort:
+    Type: Number
+    Default: 3306
+    MinValue: 1
+    MaxValue: 65535
+
+Resources:
+  AlbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub '${ProjectName} internet-facing ALB'
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: Public HTTP access
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+          Description: ALB to ECS tasks
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-alb-sg'
+        - Key: asbg
+          Value: sguday
+
+  EcsTaskSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub '${ProjectName} Fargate tasks; ingress only from ALB'
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref ContainerPort
+          ToPort: !Ref ContainerPort
+          SourceSecurityGroupId: !Ref AlbSecurityGroup
+          Description: Application traffic from ALB only
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+          Description: RDS and public AWS service endpoints from public task ENIs
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-ecs-task-sg'
+        - Key: asbg
+          Value: sguday
+
+  RdsIngressFromEcs:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Select [0, !Ref RdsSecurityGroupIds]
+      IpProtocol: tcp
+      FromPort: !Ref RdsPort
+      ToPort: !Ref RdsPort
+      SourceSecurityGroupId: !Ref EcsTaskSecurityGroup
+      Description: MySQL from Match N Catch ECS tasks
+
+Outputs:
+  AlbSecurityGroupId:
+    Value: !Ref AlbSecurityGroup
+    Export:
+      Name: !Sub '${ProjectName}-Network-AlbSecurityGroupId'
+  EcsTaskSecurityGroupId:
+    Value: !Ref EcsTaskSecurityGroup
+    Export:
+      Name: !Sub '${ProjectName}-Network-EcsTaskSecurityGroupId'
+  PublicSubnetIds:
+    Value: !Join [',', !Ref PublicSubnetIds]
+    Export:
+      Name: !Sub '${ProjectName}-Network-PublicSubnetIds'
+  VpcId:
+    Value: !Ref VpcId
+    Export:
+      Name: !Sub '${ProjectName}-Network-VpcId'

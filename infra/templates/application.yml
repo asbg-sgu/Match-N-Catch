@@ -1,0 +1,275 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Match N Catch internet-facing ALB and Fargate service.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: match-n-catch
+  ContainerPort:
+    Type: Number
+    Default: 8000
+    MinValue: 1
+    MaxValue: 65535
+  DesiredCount:
+    Type: Number
+    Default: 1
+    MinValue: 0
+    MaxValue: 4
+  ImageTag:
+    Type: String
+    Default: latest
+    AllowedPattern: '^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$'
+
+Resources:
+  Cluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub '${ProjectName}-cluster'
+      ClusterSettings:
+        - Name: containerInsights
+          Value: disabled
+      Tags:
+        - Key: asbg
+          Value: sguday
+
+  ApplicationLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/ecs/${ProjectName}/backend'
+      RetentionInDays: 14
+      Tags:
+        - Key: asbg
+          Value: sguday
+
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-ecs-execution'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: ReadApplicationSecrets
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource:
+                  - Fn::ImportValue:
+                      Fn::Sub: '${ProjectName}-Secrets-DjangoSecretArn'
+                  - Fn::ImportValue:
+                      Fn::Sub: '${ProjectName}-Secrets-RdsMasterSecretArn'
+              - Effect: Allow
+                Action: kms:Decrypt
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    kms:ViaService: !Sub 'secretsmanager.${AWS::Region}.amazonaws.com'
+      Tags:
+        - Key: asbg
+          Value: sguday
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-ecs-task'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Tags:
+        - Key: asbg
+          Value: sguday
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub '${ProjectName}-alb'
+      Scheme: internet-facing
+      Type: application
+      IpAddressType: ipv4
+      SecurityGroups:
+        - Fn::ImportValue:
+            Fn::Sub: '${ProjectName}-Network-AlbSecurityGroupId'
+      Subnets:
+        Fn::Split:
+          - ','
+          - Fn::ImportValue:
+              Fn::Sub: '${ProjectName}-Network-PublicSubnetIds'
+      Tags:
+        - Key: asbg
+          Value: sguday
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub '${ProjectName}-tg'
+      TargetType: ip
+      Port: !Ref ContainerPort
+      Protocol: HTTP
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: '${ProjectName}-Network-VpcId'
+      HealthCheckEnabled: true
+      HealthCheckPath: /health/
+      HealthCheckProtocol: HTTP
+      Matcher:
+        HttpCode: '200-399'
+      Tags:
+        - Key: asbg
+          Value: sguday
+
+  HttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub '${ProjectName}-backend'
+      RequiresCompatibilities: [FARGATE]
+      NetworkMode: awsvpc
+      Cpu: '256'
+      Memory: '512'
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt TaskRole.Arn
+      RuntimePlatform:
+        CpuArchitecture: X86_64
+        OperatingSystemFamily: LINUX
+      ContainerDefinitions:
+        - Name: Main
+          Image:
+            Fn::Join:
+              - ':'
+              - - Fn::ImportValue:
+                    Fn::Sub: '${ProjectName}-Registry-BackendRepositoryUri'
+                - !Ref ImageTag
+          Essential: true
+          PortMappings:
+            - ContainerPort: !Ref ContainerPort
+              Protocol: tcp
+          Environment:
+            - Name: DB_HOST
+              Value:
+                Fn::ImportValue:
+                  Fn::Sub: '${ProjectName}-Secrets-RdsEndpointAddress'
+            - Name: DB_PORT
+              Value:
+                Fn::ImportValue:
+                  Fn::Sub: '${ProjectName}-Secrets-RdsEndpointPort'
+            - Name: DB_NAME
+              Value:
+                Fn::ImportValue:
+                  Fn::Sub: '${ProjectName}-Secrets-DatabaseName'
+            - Name: DEBUG
+              Value: 'False'
+          Secrets:
+            - Name: SECRET_KEY
+              ValueFrom:
+                Fn::ImportValue:
+                  Fn::Sub: '${ProjectName}-Secrets-DjangoSecretArn'
+            - Name: DB_USER
+              ValueFrom:
+                Fn::Join:
+                  - ''
+                  - - Fn::ImportValue:
+                        Fn::Sub: '${ProjectName}-Secrets-RdsMasterSecretArn'
+                    - ':username::'
+            - Name: DB_PASSWORD
+              ValueFrom:
+                Fn::Join:
+                  - ''
+                  - - Fn::ImportValue:
+                        Fn::Sub: '${ProjectName}-Secrets-RdsMasterSecretArn'
+                    - ':password::'
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref ApplicationLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+      Tags:
+        - Key: asbg
+          Value: sguday
+
+  Service:
+    Type: AWS::ECS::Service
+    DependsOn: HttpListener
+    Properties:
+      ServiceName: !Sub '${ProjectName}-backend'
+      Cluster: !Ref Cluster
+      TaskDefinition: !Ref TaskDefinition
+      LaunchType: FARGATE
+      DesiredCount: !Ref DesiredCount
+      EnableECSManagedTags: true
+      PropagateTags: SERVICE
+      DeploymentConfiguration:
+        DeploymentCircuitBreaker:
+          Enable: true
+          Rollback: true
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+            - Fn::ImportValue:
+                Fn::Sub: '${ProjectName}-Network-EcsTaskSecurityGroupId'
+          Subnets:
+            Fn::Split:
+              - ','
+              - Fn::ImportValue:
+                  Fn::Sub: '${ProjectName}-Network-PublicSubnetIds'
+      LoadBalancers:
+        - ContainerName: Main
+          ContainerPort: !Ref ContainerPort
+          TargetGroupArn: !Ref TargetGroup
+      Tags:
+        - Key: asbg
+          Value: sguday
+
+Outputs:
+  AlbDnsName:
+    Value: !GetAtt LoadBalancer.DNSName
+    Export:
+      Name: !Sub '${ProjectName}-Application-AlbDnsName'
+  BackendUrl:
+    Value: !Sub 'http://${LoadBalancer.DNSName}'
+    Export:
+      Name: !Sub '${ProjectName}-Application-BackendUrl'
+  EcsClusterName:
+    Value: !Ref Cluster
+    Export:
+      Name: !Sub '${ProjectName}-Application-EcsClusterName'
+  EcsServiceName:
+    Value: !GetAtt Service.Name
+    Export:
+      Name: !Sub '${ProjectName}-Application-EcsServiceName'
+  TaskDefinitionArn:
+    Value: !Ref TaskDefinition
+    Export:
+      Name: !Sub '${ProjectName}-Application-TaskDefinitionArn'
+  TaskExecutionRoleArn:
+    Value: !GetAtt TaskExecutionRole.Arn
+    Export:
+      Name: !Sub '${ProjectName}-Application-TaskExecutionRoleArn'
+  TaskRoleArn:
+    Value: !GetAtt TaskRole.Arn
+    Export:
+      Name: !Sub '${ProjectName}-Application-TaskRoleArn'

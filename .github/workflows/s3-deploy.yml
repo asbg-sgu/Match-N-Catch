@@ -1,69 +1,43 @@
-# =============================================================================
-# CI/CD Pipeline — Frontend only
-# Trigger: push vào main khi có thay đổi frontend/**
-# Steps: Sync S3 → Invalidate CloudFront
-# Kiến trúc: User → Route53 → S3 StaticWeb (HTML/JS/CSS)
-# =============================================================================
-
-name: Frontend Deploy — S3 Static Website
+name: Frontend Deploy — GitHub OIDC → Existing S3
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - 'frontend/**'
       - '.github/workflows/s3-deploy.yml'
+  workflow_dispatch:
 
 permissions:
   id-token: write
   contents: read
 
 env:
-  AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-1' }}
+  AWS_REGION: ap-southeast-1
+  PROJECT_NAME: match-n-catch
+  S3_BUCKET: match-n-catch-bucket
 
 jobs:
   deploy-frontend:
-    name: Deploy Frontend to S3
     runs-on: ubuntu-latest
-
     steps:
-      # 1. Checkout code
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # 2. Cấu hình AWS credentials (OIDC — dùng chung IAM Role với backend)
-      - name: Configure AWS credentials
+      - uses: actions/checkout@v4
+      - name: Configure AWS credentials through GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/match-n-catch-github-actions
           aws-region: ${{ env.AWS_REGION }}
-
-      # 3. Inject API URL vào index.html (thay placeholder bằng giá trị thật từ Vars)
-      - name: Inject API_BASE_URL
+          role-session-name: match-n-catch-github
+      - name: Inject deployed ALB API URL
         run: |
-          sed -i "s|__API_BASE_URL__|${{ vars.API_BASE_URL }}|g" ./frontend/index.html
-
-      # 4. Sync toàn bộ frontend/ lên S3 bucket
-      #    --delete: xóa file cũ không còn trong repo
-      #    --exclude: bỏ qua file không cần serve
-      - name: Sync frontend to S3
+          api_url=$(aws cloudformation describe-stacks --stack-name "${PROJECT_NAME}-application" \
+            --query "Stacks[0].Outputs[?OutputKey=='BackendUrl'].OutputValue | [0]" --output text)
+          test -n "$api_url" && test "$api_url" != "None"
+          sed -i "s|__API_BASE_URL__|${api_url}|g" frontend/index.html
+      - name: Sync frontend to the existing bucket
         run: |
-          aws s3 sync ./frontend s3://${{ secrets.S3_BUCKET_NAME }} \
-            --delete \
-            --exclude ".gitignore" \
-            --exclude "package.json" \
-            --exclude "README.md" \
-            --exclude "qa/*"
-          echo "✅ Frontend synced to s3://${{ secrets.S3_BUCKET_NAME }}"
-
-      # 5. Invalidate CloudFront cache sau khi deploy
-      #    Chỉ chạy nếu secret CLOUDFRONT_DISTRIBUTION_ID đã được set
-      - name: Invalidate CloudFront cache
-        if: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID != '' }}
-        run: |
-          aws cloudfront create-invalidation \
-            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "/*"
-          echo "✅ CloudFront cache invalidated"
+          aws s3 sync frontend "s3://${S3_BUCKET}" --delete \
+            --exclude '.gitignore' \
+            --exclude 'package.json' \
+            --exclude 'README.md' \
+            --exclude 'qa/*'
