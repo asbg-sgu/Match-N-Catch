@@ -18,7 +18,7 @@ chmod +x infra/scripts/deploy.sh infra/scripts/delete.sh
 
 The script validates every template first, discovers the default VPC, requires two public subnets in distinct AZs with active internet-gateway routes, creates the database, then runs the Fargate migration task. Fargate tasks receive public IPs in those subnets so ECR, CloudWatch Logs, and Secrets Manager remain reachable without a NAT Gateway. The database uses RDS-managed master credentials without the script retrieving the password. If a newly created stack rolls back or fails, the script deletes that failed new stack only; existing stacks are left intact for normal CloudFormation rollback handling.
 
-Set the non-sensitive GitHub Actions repository variable `AWS_ACCOUNT_ID` to the AWS account ID printed by the script. The workflows use this value solely to form the OIDC role ARN; no AWS access-key secrets are used. The GitHub repository is inferred from `origin` during deployment, or from a non-sensitive `GITHUB_REPOSITORY=owner/repository` shell environment variable.
+Set the GitHub Actions repository secret `AWS_ACCOUNT_ID` to the AWS account ID printed by the script. The workflows use it solely to form the OIDC role ARN; no AWS access-key secrets are used. The GitHub repository is inferred from `origin` during deployment, or from a non-sensitive `GITHUB_REPOSITORY=owner/repository` shell environment variable.
 
 To remove only stack-managed resources:
 

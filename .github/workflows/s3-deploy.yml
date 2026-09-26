@@ -25,7 +25,7 @@ jobs:
       - name: Configure AWS credentials through GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/match-n-catch-github-actions
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/match-n-catch-github-actions
           aws-region: ${{ env.AWS_REGION }}
           role-session-name: match-n-catch-github
       - name: Inject deployed ALB API URL

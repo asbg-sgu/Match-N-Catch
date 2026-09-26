@@ -179,4 +179,4 @@ run_migrations
 deploy_stack "${PROJECT_NAME}-github-oidc" "$TEMPLATE_DIR/github-oidc.yml" "$PARAMETER_DIR/github-oidc.json" \
   "GitHubRepository=$github_repository" "CreateGitHubOidcProvider=$create_oidc_provider"
 
-printf 'Deployment succeeded. Configure GitHub Actions variable AWS_ACCOUNT_ID=%s before pushing to main.\n' "$(aws sts get-caller-identity --query Account --output text)"
+printf 'Deployment succeeded. Configure GitHub Actions secret AWS_ACCOUNT_ID=%s before pushing to main.\n' "$(aws sts get-caller-identity --query Account --output text)"
