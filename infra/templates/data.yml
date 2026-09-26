@@ -1,0 +1,103 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Small, single-AZ MySQL database for Match N Catch.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: match-n-catch
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  DbSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+  DatabaseName:
+    Type: String
+    Default: match_n_catch
+    AllowedPattern: '^[A-Za-z][A-Za-z0-9_]{0,63}$'
+  DatabaseInstanceClass:
+    Type: String
+    Default: db.t4g.micro
+    AllowedValues: [db.t4g.micro]
+  AllocatedStorageGiB:
+    Type: Number
+    Default: 20
+    MinValue: 20
+  MaxAllocatedStorageGiB:
+    Type: Number
+    Default: 30
+    MinValue: 20
+
+Resources:
+  DatabaseSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub '${ProjectName} MySQL; ingress is added only from ECS by the network stack'
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-rds-sg'
+        - Key: asbg
+          Value: sguday
+
+  DatabaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: !Sub '${ProjectName} RDS subnets across two Availability Zones'
+      SubnetIds: !Ref DbSubnetIds
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-rds-subnets'
+        - Key: asbg
+          Value: sguday
+
+  Database:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Snapshot
+    Properties:
+      DBInstanceIdentifier: !Sub '${ProjectName}-database'
+      Engine: mysql
+      DBInstanceClass: !Ref DatabaseInstanceClass
+      DBName: !Ref DatabaseName
+      MasterUsername: admin
+      ManageMasterUserPassword: true
+      AllocatedStorage: !Ref AllocatedStorageGiB
+      MaxAllocatedStorage: !Ref MaxAllocatedStorageGiB
+      StorageType: gp3
+      StorageEncrypted: true
+      PubliclyAccessible: false
+      MultiAZ: false
+      DBSubnetGroupName: !Ref DatabaseSubnetGroup
+      VPCSecurityGroups: [!Ref DatabaseSecurityGroup]
+      Port: 3306
+      BackupRetentionPeriod: 1
+      AutoMinorVersionUpgrade: true
+      CopyTagsToSnapshot: true
+      DeletionProtection: false
+      EnableIAMDatabaseAuthentication: false
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-database'
+        - Key: asbg
+          Value: sguday
+
+Outputs:
+  DatabaseSecurityGroupId:
+    Value: !Ref DatabaseSecurityGroup
+    Export:
+      Name: !Sub '${ProjectName}-Data-DatabaseSecurityGroupId'
+  DatabaseEndpointAddress:
+    Value: !GetAtt Database.Endpoint.Address
+    Export:
+      Name: !Sub '${ProjectName}-Data-DatabaseEndpointAddress'
+  DatabaseEndpointPort:
+    Value: !GetAtt Database.Endpoint.Port
+    Export:
+      Name: !Sub '${ProjectName}-Data-DatabaseEndpointPort'
+  DatabaseName:
+    Value: !Ref DatabaseName
+    Export:
+      Name: !Sub '${ProjectName}-Data-DatabaseName'
+  MasterUserSecretArn:
+    Value: !GetAtt Database.MasterUserSecret.SecretArn
+    Export:
+      Name: !Sub '${ProjectName}-Data-MasterUserSecretArn'

@@ -10,16 +10,9 @@ Parameters:
     Type: AWS::EC2::VPC::Id
   PublicSubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
-  RdsSecurityGroupIds:
-    Type: CommaDelimitedList
   ContainerPort:
     Type: Number
     Default: 8000
-    MinValue: 1
-    MaxValue: 65535
-  RdsPort:
-    Type: Number
-    Default: 3306
     MinValue: 1
     MaxValue: 65535
 
@@ -69,10 +62,12 @@ Resources:
   RdsIngressFromEcs:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      GroupId: !Select [0, !Ref RdsSecurityGroupIds]
+      GroupId:
+        Fn::ImportValue:
+          Fn::Sub: '${ProjectName}-Data-DatabaseSecurityGroupId'
       IpProtocol: tcp
-      FromPort: !Ref RdsPort
-      ToPort: !Ref RdsPort
+      FromPort: 3306
+      ToPort: 3306
       SourceSecurityGroupId: !Ref EcsTaskSecurityGroup
       Description: MySQL from Match N Catch ECS tasks
 

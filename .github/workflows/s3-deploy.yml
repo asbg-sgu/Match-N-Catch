@@ -26,7 +26,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/match-n-catch-github-actions
-          aws-region: ${AWS_REGION}
+          aws-region: ${{ env.AWS_REGION }}
           role-session-name: match-n-catch-github
       - name: Inject deployed ALB API URL
         run: |
@@ -41,40 +41,3 @@ jobs:
             --exclude 'package.json' \
             --exclude 'README.md' \
             --exclude 'qa/*'
-
-      # 3. Inject API URL vào index.html + leaderboard.html (thay placeholder bằng giá trị thật từ Vars)
-      #    API_BASE_URL đang được tạo ở Secrets (không phải Variables) → đọc cả 2.
-      #    Rỗng thì dừng: nếu không FE production sẽ âm thầm gọi http://localhost:8000
-      - name: Inject API_BASE_URL
-        env:
-          API_BASE_URL: ${{ vars.API_BASE_URL || secrets.API_BASE_URL }}
-        run: |
-          if [ -z "$API_BASE_URL" ]; then
-            echo "::error::Thiếu API_BASE_URL (Settings → Secrets and variables → Actions)"; exit 1
-          fi
-          sed -i "s|__API_BASE_URL__|${API_BASE_URL}|g" ./frontend/index.html ./frontend/leaderboard.html
-          ! grep -q "__API_BASE_URL__" ./frontend/index.html ./frontend/leaderboard.html
-
-      # 4. Sync toàn bộ frontend/ lên S3 bucket
-      #    --delete: xóa file cũ không còn trong repo
-      #    --exclude: bỏ qua file không cần serve
-      - name: Sync frontend to S3
-        run: |
-          aws s3 sync ./frontend s3://${{ secrets.S3_BUCKET_NAME }} \
-            --delete \
-            --exclude ".gitignore" \
-            --exclude "package.json" \
-            --exclude "README.md" \
-            --exclude "qa/*"
-          echo "✅ Frontend synced to s3://${{ secrets.S3_BUCKET_NAME }}"
-
-      # 5. Invalidate CloudFront cache sau khi deploy
-      #    Chỉ chạy nếu secret CLOUDFRONT_DISTRIBUTION_ID đã được set
-      - name: Invalidate CloudFront cache
-        if: ${{ env.CF_DIST_ID != '' }}
-        run: |
-          aws cloudfront create-invalidation \
-            --distribution-id "$CF_DIST_ID" \
-            --paths "/*"
-          echo "✅ CloudFront cache invalidated"
-

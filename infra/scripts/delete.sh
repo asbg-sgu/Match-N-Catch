@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Deletes only CloudFormation stacks created by deploy.sh, in reverse dependency order.
-# It never calls S3 or RDS deletion APIs.
+# It never calls an S3 deletion API. The stack-managed RDS database is deleted last.
 set -Eeuo pipefail
 
 readonly REGION='ap-southeast-1'
@@ -30,4 +30,5 @@ delete_stack "${PROJECT_NAME}-application"
 delete_stack "${PROJECT_NAME}-registry"
 delete_stack "${PROJECT_NAME}-secrets"
 delete_stack "${PROJECT_NAME}-network"
-printf 'Stack deletion succeeded. Existing match-n-catch-bucket and match-n-catch-database were not touched.\n'
+delete_stack "${PROJECT_NAME}-data"
+printf 'Stack deletion succeeded. Existing match-n-catch-bucket was not touched; the stack-managed database was deleted.\n'

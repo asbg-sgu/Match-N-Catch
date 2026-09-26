@@ -1,0 +1,7 @@
+[
+  {"ParameterKey":"ProjectName","ParameterValue":"match-n-catch"},
+  {"ParameterKey":"DatabaseName","ParameterValue":"match_n_catch"},
+  {"ParameterKey":"DatabaseInstanceClass","ParameterValue":"db.t4g.micro"},
+  {"ParameterKey":"AllocatedStorageGiB","ParameterValue":"20"},
+  {"ParameterKey":"MaxAllocatedStorageGiB","ParameterValue":"30"}
+]

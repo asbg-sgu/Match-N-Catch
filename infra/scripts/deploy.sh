@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Deploys only the Match N Catch CloudFormation stacks. Existing S3 and RDS are
-# discovered and tagged, but are never placed in a stack or deleted.
+# Deploys Match N Catch CloudFormation stacks. The existing S3 bucket remains
+# outside CloudFormation; the database is owned by the data stack.
 set -Eeuo pipefail
 
 readonly REGION='ap-southeast-1'
@@ -125,6 +125,7 @@ discover_github_repository() {
 for command in aws jq docker git; do require_command "$command"; done
 aws sts get-caller-identity >/dev/null
 aws cloudformation validate-template --template-body "file://$TEMPLATE_DIR/network.yml" >/dev/null
+aws cloudformation validate-template --template-body "file://$TEMPLATE_DIR/data.yml" >/dev/null
 aws cloudformation validate-template --template-body "file://$TEMPLATE_DIR/secrets.yml" >/dev/null
 aws cloudformation validate-template --template-body "file://$TEMPLATE_DIR/registry.yml" >/dev/null
 aws cloudformation validate-template --template-body "file://$TEMPLATE_DIR/application.yml" >/dev/null
@@ -133,28 +134,12 @@ aws cloudformation validate-template --template-body "file://$TEMPLATE_DIR/githu
 aws s3api head-bucket --bucket "$S3_BUCKET"
 tag_existing_bucket
 
-rds="$(aws rds describe-db-instances --db-instance-identifier "$RDS_IDENTIFIER" --query 'DBInstances[0]' --output json)"
-[[ "$(jq -r '.DBInstanceStatus' <<<"$rds")" == 'available' ]] || { printf 'Existing RDS instance must be available.\n' >&2; exit 1; }
-engine="$(jq -r '.Engine' <<<"$rds")"
-[[ "$engine" == *mysql* || "$engine" == mariadb* ]] || { printf 'RDS engine %s is not supported by this Django MySQL configuration.\n' "$engine" >&2; exit 1; }
-vpc_id="$(jq -r '.DBSubnetGroup.VpcId' <<<"$rds")"
-rds_security_groups="$(jq -r '[.VpcSecurityGroups[].VpcSecurityGroupId] | join(",")' <<<"$rds")"
-rds_arn="$(jq -r '.DBInstanceArn' <<<"$rds")"
-rds_endpoint="$(jq -r '.Endpoint.Address' <<<"$rds")"
-rds_port="$(jq -r '.Endpoint.Port' <<<"$rds")"
-database_name="$(jq -r '.DBName // empty' <<<"$rds")"
-database_name="${database_name:-match_n_catch}"
-[[ -n "$vpc_id" && -n "$rds_security_groups" && -n "$rds_endpoint" ]] || { printf 'RDS networking metadata is incomplete.\n' >&2; exit 1; }
-aws rds add-tags-to-resource --resource-name "$rds_arn" --tags Key=asbg,Value=sguday
-
-rds_master_secret="$(jq -r '.MasterUserSecret.SecretArn // empty' <<<"$rds")"
-if [[ -z "$rds_master_secret" ]]; then
-  printf 'Enabling RDS-managed master credentials in Secrets Manager (no secret is displayed).\n'
-  aws rds modify-db-instance --db-instance-identifier "$RDS_IDENTIFIER" --manage-master-user-password --apply-immediately >/dev/null
-  aws rds wait db-instance-available --db-instance-identifier "$RDS_IDENTIFIER"
-  rds_master_secret="$(aws rds describe-db-instances --db-instance-identifier "$RDS_IDENTIFIER" --query 'DBInstances[0].MasterUserSecret.SecretArn' --output text)"
+vpc_id="$(aws ec2 describe-vpcs --filters Name=is-default,Values=true --query 'Vpcs[0].VpcId' --output text)"
+[[ "$vpc_id" != 'None' && -n "$vpc_id" ]] || { printf 'This cost-conscious deployment requires a default VPC in ap-southeast-1.\n' >&2; exit 1; }
+if ! stack_exists "${PROJECT_NAME}-data" && aws rds describe-db-instances --db-instance-identifier "$RDS_IDENTIFIER" >/dev/null 2>&1; then
+  printf 'RDS instance %s already exists outside the data stack. It will not be deleted or adopted automatically. Delete or rename that unmanaged instance before creating this stack.\n' "$RDS_IDENTIFIER" >&2
+  exit 1
 fi
-[[ "$rds_master_secret" != 'None' && -n "$rds_master_secret" ]] || { printf 'RDS did not provide a Secrets Manager master secret.\n' >&2; exit 1; }
 
 declare -A selected_azs=()
 public_subnets=()
@@ -176,10 +161,12 @@ if ! aws iam get-open-id-connect-provider --open-id-connect-provider-arn "$oidc_
   create_oidc_provider=true
 fi
 
+deploy_stack "${PROJECT_NAME}-data" "$TEMPLATE_DIR/data.yml" "$PARAMETER_DIR/data.json" \
+  "VpcId=$vpc_id" "DbSubnetIds=$public_subnet_ids"
+aws secretsmanager tag-resource --secret-id "$(stack_output "${PROJECT_NAME}-data" MasterUserSecretArn)" --tags Key=asbg,Value=sguday
 deploy_stack "${PROJECT_NAME}-network" "$TEMPLATE_DIR/network.yml" "$PARAMETER_DIR/network.json" \
-  "VpcId=$vpc_id" "PublicSubnetIds=$public_subnet_ids" "RdsSecurityGroupIds=$rds_security_groups" "RdsPort=$rds_port"
-deploy_stack "${PROJECT_NAME}-secrets" "$TEMPLATE_DIR/secrets.yml" "$PARAMETER_DIR/secrets.json" \
-  "RdsMasterSecretArn=$rds_master_secret" "RdsEndpointAddress=$rds_endpoint" "RdsEndpointPort=$rds_port" "DatabaseName=$database_name"
+  "VpcId=$vpc_id" "PublicSubnetIds=$public_subnet_ids"
+deploy_stack "${PROJECT_NAME}-secrets" "$TEMPLATE_DIR/secrets.yml" "$PARAMETER_DIR/secrets.json"
 deploy_stack "${PROJECT_NAME}-registry" "$TEMPLATE_DIR/registry.yml" "$PARAMETER_DIR/registry.json"
 
 repository_uri="$(stack_output "${PROJECT_NAME}-registry" BackendRepositoryUri)"
