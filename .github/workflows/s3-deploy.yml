@@ -1,4 +1,4 @@
-name: Frontend Deploy — GitHub OIDC → Existing S3
+name: Frontend Deploy — GitHub OIDC → Existing S3 (HTTPS API)
 
 on:
   push:
@@ -21,19 +21,21 @@ jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Configure AWS credentials through GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/match-n-catch-github-actions
           aws-region: ${{ env.AWS_REGION }}
           role-session-name: match-n-catch-github
-      - name: Inject deployed ALB API URL
+      - name: Inject deployed HTTPS API URL
         run: |
           api_url=$(aws cloudformation describe-stacks --stack-name "${PROJECT_NAME}-application" \
             --query "Stacks[0].Outputs[?OutputKey=='BackendUrl'].OutputValue | [0]" --output text)
           test -n "$api_url" && test "$api_url" != "None"
-          sed -i "s|__API_BASE_URL__|${api_url}|g" frontend/index.html
+          sed -i "s|__API_BASE_URL__|${api_url}|g" \
+            frontend/index.html \
+            frontend/leaderboard.html
       - name: Sync frontend to the existing bucket
         run: |
           aws s3 sync frontend "s3://${S3_BUCKET}" --delete \

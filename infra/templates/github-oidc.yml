@@ -8,6 +8,13 @@ Parameters:
   GitHubRepository:
     Type: String
     AllowedPattern: '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$'
+  GitHubOidcSubject:
+    Type: String
+    Default: ''
+    AllowedPattern: '^$|^repo:[A-Za-z0-9_.-]+@[0-9]+/[A-Za-z0-9_.-]+@[0-9]+:ref:refs/heads/main$'
+    ConstraintDescription: >-
+      must be empty or the immutable GitHub OIDC subject for the main branch,
+      for example repo:owner@123/repository@456:ref:refs/heads/main
   CreateGitHubOidcProvider:
     Type: String
     Default: 'false'
@@ -15,6 +22,7 @@ Parameters:
 
 Conditions:
   CreateProvider: !Equals [!Ref CreateGitHubOidcProvider, 'true']
+  UseExplicitGitHubOidcSubject: !Not [!Equals [!Ref GitHubOidcSubject, '']]
 
 Resources:
   GitHubOidcProvider:
@@ -45,8 +53,10 @@ Resources:
             Condition:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
-              StringLike:
-                token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubRepository}:ref:refs/heads/main'
+                token.actions.githubusercontent.com:sub: !If
+                  - UseExplicitGitHubOidcSubject
+                  - !Ref GitHubOidcSubject
+                  - !Sub 'repo:${GitHubRepository}:ref:refs/heads/main'
       Policies:
         - PolicyName: DeployMatchNCatch
           PolicyDocument:
@@ -80,6 +90,7 @@ Resources:
                   - ecs:DescribeTasks
                   - ecs:ListTasks
                   - ecs:RunTask
+                  - ecs:TagResource
                 Resource: '*'
               - Sid: PassOnlyApplicationTaskRoles
                 Effect: Allow

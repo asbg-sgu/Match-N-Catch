@@ -139,6 +139,44 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref TargetGroup
 
+  ApiDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: !Sub '${ProjectName} HTTPS API endpoint'
+        Enabled: true
+        HttpVersion: http2
+        IPV6Enabled: true
+        PriceClass: PriceClass_200
+        Origins:
+          - Id: ApplicationLoadBalancerOrigin
+            DomainName: !GetAtt LoadBalancer.DNSName
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: http-only
+              OriginSSLProtocols: [TLSv1.2]
+        DefaultCacheBehavior:
+          TargetOriginId: ApplicationLoadBalancerOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+          CachedMethods: [GET, HEAD, OPTIONS]
+          MinTTL: 0
+          DefaultTTL: 0
+          MaxTTL: 0
+          ForwardedValues:
+            QueryString: true
+            Headers:
+              - Access-Control-Request-Headers
+              - Access-Control-Request-Method
+              - Authorization
+              - Content-Type
+              - Origin
+            Cookies:
+              Forward: all
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -250,9 +288,13 @@ Outputs:
     Export:
       Name: !Sub '${ProjectName}-Application-AlbDnsName'
   BackendUrl:
-    Value: !Sub 'http://${LoadBalancer.DNSName}'
+    Value: !Sub 'https://${ApiDistribution.DomainName}'
     Export:
       Name: !Sub '${ProjectName}-Application-BackendUrl'
+  ApiDistributionDomainName:
+    Value: !GetAtt ApiDistribution.DomainName
+    Export:
+      Name: !Sub '${ProjectName}-Application-ApiDistributionDomainName'
   EcsClusterName:
     Value: !Ref Cluster
     Export:

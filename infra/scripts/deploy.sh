@@ -155,6 +155,7 @@ done < <(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$vpc_id" "Name=s
 public_subnet_ids="$(IFS=,; printf '%s' "${public_subnets[*]}")"
 
 github_repository="$(discover_github_repository)"
+github_oidc_subject="${GITHUB_OIDC_SUBJECT:-}"
 oidc_provider_arn="arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):oidc-provider/token.actions.githubusercontent.com"
 create_oidc_provider=false
 if ! aws iam get-open-id-connect-provider --open-id-connect-provider-arn "$oidc_provider_arn" >/dev/null 2>&1; then
@@ -176,7 +177,14 @@ docker push "${repository_uri}:latest"
 
 deploy_stack "${PROJECT_NAME}-application" "$TEMPLATE_DIR/application.yml" "$PARAMETER_DIR/application.json"
 run_migrations
+oidc_parameter_overrides=(
+  "GitHubRepository=$github_repository"
+  "CreateGitHubOidcProvider=$create_oidc_provider"
+)
+if [[ -n "$github_oidc_subject" ]]; then
+  oidc_parameter_overrides+=("GitHubOidcSubject=$github_oidc_subject")
+fi
 deploy_stack "${PROJECT_NAME}-github-oidc" "$TEMPLATE_DIR/github-oidc.yml" "$PARAMETER_DIR/github-oidc.json" \
-  "GitHubRepository=$github_repository" "CreateGitHubOidcProvider=$create_oidc_provider"
+  "${oidc_parameter_overrides[@]}"
 
 printf 'Deployment succeeded. Configure GitHub Actions secret AWS_ACCOUNT_ID=%s before pushing to main.\n' "$(aws sts get-caller-identity --query Account --output text)"
