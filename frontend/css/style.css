@@ -119,7 +119,9 @@ input { font-family: inherit; }
 /* ============ KHUNG APP ============ */
 #app {
   position: relative; z-index: 1;
-  width: min(100%, 430px); height: 100dvh;
+  width: min(100%, 430px);
+  height: 100%; /* fallback: iOS Safari < 15.4 không hiểu dvh → #app cao 0, arena mất */
+  height: 100dvh;
   margin: 0 auto;
   display: flex; flex-direction: column;
 }

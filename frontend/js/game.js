@@ -335,12 +335,13 @@ function dockToTop(focus, dock, done) {
 }
 function clearArena() {
   const cards = $$('#arena .answer');
+  // bỏ thẻ cũ khỏi S.answers NGAY: chạm vào thẻ đang bay ra không được tính cho câu mới
+  S.answers = [];
   if (cards.length) {
     cards.forEach((c) => c.classList.add('fly-out'));
-    st(() => { $('#arena').innerHTML = ''; S.answers = []; }, 320);
+    st(() => { cards.forEach((c) => c.remove()); }, 320);
   } else {
     $('#arena').innerHTML = '';
-    S.answers = [];
   }
 }
 
@@ -556,7 +557,7 @@ function renderTimer(holderId, numId, ringId, remain, total) {
 
 /* ---------- xử lý chạm ---------- */
 function tapAnswer(i) {
-  if (S.phase !== 'play' || S.resolving || S.paused) return;
+  if (S.phase !== 'play' || S.resolving || S.paused || !S.answers[i]) return;
   resolve(i);
 }
 function resolve(tapped) {
