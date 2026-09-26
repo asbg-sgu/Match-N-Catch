@@ -216,7 +216,7 @@ async function loadLeaderboard(isManual = false) {
       // Gọi trực tiếp API để lấy raw data (bao gồm total_participants, event_name)
       const baseURL = window.GameAPI.baseURL();
       const res = await fetch(baseURL + '/api/leaderboard/?limit=' + DEFAULT_LIMIT, {
-        signal: AbortSignal.timeout(10_000),
+        signal: timeoutSignal(10_000),
       });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
@@ -339,7 +339,7 @@ async function lookupFromServer(mssv, resultEl) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ student_id: mssv, display_name: '' }),
-      signal: AbortSignal.timeout(8_000),
+      signal: timeoutSignal(8_000),
     });
 
     if (res.status === 404) {

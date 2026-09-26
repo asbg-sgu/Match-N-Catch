@@ -10,6 +10,7 @@
 body {
   overflow: auto !important;
   height: auto !important;
+  min-height: 100vh; /* fallback iOS < 15.4 */
   min-height: 100dvh;
 }
 
@@ -17,6 +18,7 @@ body {
 .lb-page {
   position: relative;
   z-index: 1;
+  min-height: 100vh; /* fallback iOS < 15.4 */
   min-height: 100dvh;
   width: min(100%, 430px);
   margin: 0 auto;
