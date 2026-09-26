@@ -44,9 +44,17 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       # 3. Inject API URL vào index.html + leaderboard.html (thay placeholder bằng giá trị thật từ Vars)
+      #    API_BASE_URL đang được tạo ở Secrets (không phải Variables) → đọc cả 2.
+      #    Rỗng thì dừng: nếu không FE production sẽ âm thầm gọi http://localhost:8000
       - name: Inject API_BASE_URL
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL || secrets.API_BASE_URL }}
         run: |
-          sed -i "s|__API_BASE_URL__|${{ vars.API_BASE_URL }}|g" ./frontend/index.html ./frontend/leaderboard.html
+          if [ -z "$API_BASE_URL" ]; then
+            echo "::error::Thiếu API_BASE_URL (Settings → Secrets and variables → Actions)"; exit 1
+          fi
+          sed -i "s|__API_BASE_URL__|${API_BASE_URL}|g" ./frontend/index.html ./frontend/leaderboard.html
+          ! grep -q "__API_BASE_URL__" ./frontend/index.html ./frontend/leaderboard.html
 
       # 4. Sync toàn bộ frontend/ lên S3 bucket
       #    --delete: xóa file cũ không còn trong repo
