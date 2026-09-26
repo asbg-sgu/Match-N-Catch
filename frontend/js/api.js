@@ -21,7 +21,7 @@
 'use strict';
 
 const API_BASE = (new URLSearchParams(location.search).get('api'))
-  || window.API_BASE_URL
+  || (/^__/.test(window.API_BASE_URL || '') ? '' : window.API_BASE_URL) // placeholder chưa được CI thay → bỏ qua
   || 'http://localhost:8000';
 
 const API_TIMEOUT = 12000;

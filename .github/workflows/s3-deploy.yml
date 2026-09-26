@@ -26,6 +26,9 @@ jobs:
   deploy-frontend:
     name: Deploy Frontend to S3
     runs-on: ubuntu-latest
+    env:
+      # secrets không dùng được trong step if: → đưa qua env
+      CF_DIST_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
 
     steps:
       # 1. Checkout code
@@ -39,10 +42,10 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 3. Inject API URL vào index.html (thay placeholder bằng giá trị thật từ Vars)
+      # 3. Inject API URL vào index.html + leaderboard.html (thay placeholder bằng giá trị thật từ Vars)
       - name: Inject API_BASE_URL
         run: |
-          sed -i "s|__API_BASE_URL__|${{ vars.API_BASE_URL }}|g" ./frontend/index.html
+          sed -i "s|__API_BASE_URL__|${{ vars.API_BASE_URL }}|g" ./frontend/index.html ./frontend/leaderboard.html
 
       # 4. Sync toàn bộ frontend/ lên S3 bucket
       #    --delete: xóa file cũ không còn trong repo
@@ -60,9 +63,9 @@ jobs:
       # 5. Invalidate CloudFront cache sau khi deploy
       #    Chỉ chạy nếu secret CLOUDFRONT_DISTRIBUTION_ID đã được set
       - name: Invalidate CloudFront cache
-        if: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID != '' }}
+        if: ${{ env.CF_DIST_ID != '' }}
         run: |
           aws cloudfront create-invalidation \
-            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --distribution-id "$CF_DIST_ID" \
             --paths "/*"
           echo "✅ CloudFront cache invalidated"
