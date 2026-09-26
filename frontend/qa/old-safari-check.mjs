@@ -53,6 +53,15 @@ for (const [name, launch] of engines) {
     ok(tag + 'câu hỏi hiển thị', m.qVisible);
     ok(tag + 'đáp án đã spawn', m.answers >= 2, 'answers=' + m.answers);
     ok(tag + 'có đáp án bay trong arena', m.inside >= 1, 'inside=' + m.inside);
+    // chạm thẻ của câu cũ đang bay ra (320ms sau khi sang câu mới) → không được tính, không kẹt game
+    const stale = await page.evaluate(() => {
+      const old = document.querySelector('#arena .answer:last-child');
+      S.answers.forEach((a) => { a.mode = 'freeze'; });
+      advanceQuestion();
+      old.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      return { resolving: S.resolving, lives: S.lives, q: S.qIndex };
+    });
+    ok(tag + 'chạm thẻ cũ khi sang câu mới bị bỏ qua', !stale.resolving && stale.q === 1, JSON.stringify(stale));
     const reqErr = await page.evaluate(() => request('/health/').then(() => 'ok', (e) => e.name + ': ' + e.message));
     ok(tag + 'request không chết vì thiếu API', !/TypeError/.test(reqErr), reqErr);
 
