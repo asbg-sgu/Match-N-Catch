@@ -87,7 +87,43 @@ Resources:
             Principal:
               Service: ecs-tasks.amazonaws.com
             Action: sts:AssumeRole
+      Policies:
+        - PolicyName: WriteDatabaseExports
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub '${DatabaseExportBucket.Arn}/database-exports/*'
       Tags:
+        - Key: asbg
+          Value: sguday
+
+  DatabaseExportBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireDatabaseExports
+            Status: Enabled
+            ExpirationInDays: 7
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-database-exports'
         - Key: asbg
           Value: sguday
 
@@ -217,6 +253,8 @@ Resources:
                   Fn::Sub: '${ProjectName}-Secrets-DatabaseName'
             - Name: DEBUG
               Value: 'False'
+            - Name: DATABASE_EXPORT_BUCKET
+              Value: !Ref DatabaseExportBucket
           Secrets:
             - Name: SECRET_KEY
               ValueFrom:
@@ -315,3 +353,8 @@ Outputs:
     Value: !GetAtt TaskRole.Arn
     Export:
       Name: !Sub '${ProjectName}-Application-TaskRoleArn'
+  DatabaseExportBucketName:
+    Description: Private bucket holding one-off database export archives for seven days.
+    Value: !Ref DatabaseExportBucket
+    Export:
+      Name: !Sub '${ProjectName}-Application-DatabaseExportBucketName'

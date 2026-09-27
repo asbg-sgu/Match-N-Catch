@@ -29,10 +29,21 @@ GITHUB_OIDC_SUBJECT='repo:OWNER@OWNER_ID/REPOSITORY@REPOSITORY_ID:ref:refs/heads
 
 The value is an identity selector, not a credential. The template uses it as an exact trust-policy match and still supports the legacy name-only subject when the variable is omitted.
 
-To remove only stack-managed resources:
+To completely remove the deployment and its data:
 
 ```bash
 ./infra/scripts/delete.sh
 ```
 
-It deletes the stacks in reverse dependency order. It never deletes the existing bucket. It does delete the RDS instance created by `match-n-catch-data`; deletion protection is intentionally disabled and no final snapshot is retained.
+It deletes the stacks in reverse dependency order, then permanently empties and deletes both `match-n-catch-bucket` and the retained database-export bucket (including object versions and delete markers). It also deletes the RDS instance created by `match-n-catch-data`; deletion protection is intentionally disabled and no final snapshot is retained.
+
+## Export database data
+
+After deploying the current application stack, run the following from Git Bash, WSL, macOS, or Linux:
+
+```bash
+chmod +x infra/scripts/export-database.sh
+./infra/scripts/export-database.sh
+```
+
+The script runs a temporary Fargate task in the RDS VPC and downloads a ZIP archive containing `events.csv`, `players.csv`, `game_attempts.csv`, `reward_claims.csv`, and a row-count manifest. It does not print database data or credentials to logs. The archive is also retained in a private, AES-256 encrypted S3 bucket for seven days. The AWS identity running the script needs permission to read that S3 object.
