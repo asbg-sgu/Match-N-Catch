@@ -235,6 +235,17 @@ a.btn-ghost:hover { background: rgba(148,180,255,.07); color: var(--text-hi); }
 #start-form { width: 100%; padding: 20px; animation: screen-in .7s .12s var(--ease-reveal) both; }
 .play-left { font-size: 12.5px; color: var(--amber); font-weight: 600; margin: -4px 0 12px 4px; }
 .cover-note { margin-top: 12px; text-align: center; font-size: 11.5px; color: var(--text-low); }
+.resource-links { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
+.resource-links a {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px;
+  border: 1px solid var(--line-soft); border-radius: 999px;
+  color: var(--text-mid); background: rgba(22,37,63,.42);
+  font-size: 11.5px; font-weight: 600; text-decoration: none;
+  transition: background .2s, border-color .2s, color .2s, transform .15s;
+}
+.resource-links a:hover { background: rgba(148,180,255,.09); border-color: var(--line); color: var(--text-hi); }
+.resource-links a:active { transform: scale(.97); }
+.resource-links svg { width: 14px; height: 14px; color: var(--orange-soft); }
 .cover-foot { margin: 14px 0 4px; text-align: center; font-size: 11px; color: var(--text-low); letter-spacing: .4px; }
 
 /* ============ HƯỚNG DẪN ============ */
